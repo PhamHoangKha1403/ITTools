@@ -3,7 +3,12 @@
     /// <summary>
     /// Contract for plugin implementations.
     /// </summary>
-    internal interface ITool
+    public interface ITool
     {
+        string Name { get; }
+        string Description { get; }
+        string Group { get; }
+        bool IsPremium { get; }
+        Task<object> ExecuteAsync(object input);
     }
 }

@@ -1,0 +1,5 @@
+﻿@ITTools.API_HostAddress = https://localhost:7261
+
+GET {{ITTools.API_HostAddress}}/weatherforecast
+
+###

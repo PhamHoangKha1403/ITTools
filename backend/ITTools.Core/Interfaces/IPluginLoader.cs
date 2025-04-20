@@ -3,7 +3,8 @@
     /// <summary>
     /// Loads plugin implementations.
     /// </summary>
-    internal interface IPluginLoader
+    public interface IPluginLoader
     {
+        IEnumerable<ITool> LoadToolsFromAssembly(string assemblyPath);
     }
 }

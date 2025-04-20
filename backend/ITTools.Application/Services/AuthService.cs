@@ -5,6 +5,7 @@ using ITTools.Domain.Entities;
 using ITTools.Domain.Enums;
 using ITTools.Domain.Interfaces;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 
@@ -14,11 +15,13 @@ namespace ITTools.Application.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService(IUserRepository userRepository, IConfiguration configuration)
+        public AuthService(IUserRepository userRepository, IConfiguration configuration, ILogger<AuthService> logger)
         {
             _userRepository = userRepository;
             _configuration = configuration;
+            _logger = logger;
         }
 
         public async Task<(string?, User?)> Login(string username, string password)
@@ -26,6 +29,7 @@ namespace ITTools.Application.Services
             var user = await _userRepository.GetByUsernameAsync(username);
             if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
+                _logger.LogWarning("Login failed for user: {Username}", username);
                 throw new NotFoundException("Username or password is incorrect.");
             }
 
@@ -49,6 +53,9 @@ namespace ITTools.Application.Services
             var tokenHandler = new JsonWebTokenHandler();
             string token = tokenHandler.CreateToken(tokenDescriptor);
 
+            // Log the successful login
+            _logger.LogInformation("User {Username} logged in successfully.", username);
+
             return (token, user);
         }
 
@@ -57,6 +64,7 @@ namespace ITTools.Application.Services
             var existingUser = await _userRepository.GetByUsernameAsync(username);
             if (existingUser != null)
             {
+                _logger.LogWarning("Registration failed: Username already exists: {Username}", username);
                 throw new AlreadyExistException("Username already exists.");
             }
 
@@ -71,6 +79,7 @@ namespace ITTools.Application.Services
             var result = await _userRepository.AddAsync(newUser);
             if (result == 0)
             {
+                _logger.LogError("Failed to register user: {Username}", username);
                 throw new Exception("Failed to register user.");
             }
         }

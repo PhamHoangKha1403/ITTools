@@ -1,9 +1,11 @@
-using System.Text;
+﻿using System.Text;
 using ITTools.API.Middlewares;
 using ITTools.Application.Services;
 using ITTools.Domain.Enums;
 using ITTools.Domain.Interfaces;
 using ITTools.Infrastructure.DataAccess;
+using ITTools.Infrastructure.Plugins;
+using ITTools.Infrastructure.Watchers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -15,8 +17,17 @@ var configuration = builder.Configuration;
 builder.Services.AddSingleton<IConfiguration>(configuration);
 
 // Add services to the container.
+builder.Services.AddControllers()
+    .AddNewtonsoftJson(options =>
+    {
+        // Tùy chọn cấu hình Newtonsoft nếu cần
+        // Ví dụ: giữ nguyên kiểu xử lý vòng lặp tham chiếu mặc định
+        options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+        // options.SerializerSettings.ContractResolver = new DefaultContractResolver(); // Thêm các cấu hình khác nếu bạn cần
+    });
 
-builder.Services.AddControllers();
+
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -77,8 +88,17 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")).UseSnakeCaseNamingConvention());
 
+
+builder.Services.AddScoped<IPluginLoader, PluginLoader>();
+builder.Services.AddScoped<IPluginChangeHandler, ToolRegistrationService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IToolRepository, ToolRepository>();
+builder.Services.AddScoped<ToolRegistrationService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<ToolService>();
+builder.Services.AddScoped<ToolExecutionService>();
+
+builder.Services.AddHostedService<PluginWatcherService>();
 
 var app = builder.Build();
 
@@ -88,9 +108,9 @@ app.UsePathBase(new PathString("/api/v1"));
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseDeveloperExceptionPage();
 }
 else
 {

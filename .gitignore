@@ -11,3 +11,4 @@ backend/ITTools.Core/bin
 backend/ITTools.Core/obj
 backend/ITTools.DataAccess/bin
 backend/ITTools.DataAccess/obj
+backend/ITTools/appsettings.Development.json

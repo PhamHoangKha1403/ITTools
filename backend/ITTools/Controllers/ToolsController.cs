@@ -1,4 +1,4 @@
-﻿using ITTools.Application.DTO;
+﻿using ITTools.Application.Exceptions;
 using ITTools.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,7 +29,14 @@ namespace ITTools.API.Controllers
             // Ensure the directory exists (optional here, watcher service also does this)
             if (!Directory.Exists(_pluginDirectoryPath))
             {
-                try { Directory.CreateDirectory(_pluginDirectoryPath); } catch { /* Log error if needed */ }
+                try
+                {
+                    Directory.CreateDirectory(_pluginDirectoryPath);
+                }
+                catch
+                {
+                    _logger.LogError("Failed to create plugin directory: {Path}.", _pluginDirectoryPath);
+                }
             }
         }
 
@@ -37,24 +44,12 @@ namespace ITTools.API.Controllers
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetAllTools()
+        public async Task<IActionResult> GetAllTools(string? name)
         {
-            _logger.LogInformation("Admin request to get all tools.");
-            var tools = await _toolService.GetAllToolsAsync();
+            _logger.LogInformation("Request to get all tools.");
+            var tools = await _toolService.GetAllToolsAsync(name);
 
-            // Map the tools to DTOs if needed
-            // For example, if you have a ToolDTO class, you can map it here
-            var toolDTOs = tools.Select(t => new ToolDTO
-            {
-                Id = t.Id,
-                Name = t.Name,
-                Description = t.Description,
-                GroupId = t.GroupId,
-                IsPremium = t.IsPremium,
-                IsEnabled = t.IsEnabled,
-            });
-
-            return Ok(toolDTOs);
+            return Ok(new { data = tools });
         }
 
         // Endpoint to upload new DLL plugin file
@@ -67,7 +62,7 @@ namespace ITTools.API.Controllers
             if (file == null || file.Length == 0)
             {
                 _logger.LogWarning("UploadPlugin: No file uploaded.");
-                return BadRequest("No file uploaded.");
+                return BadRequest(new { message = "No file uploaded." });
             }
 
             // Basic validation: check for .dll extension
@@ -75,7 +70,7 @@ namespace ITTools.API.Controllers
             if (extension != ".dll")
             {
                 _logger.LogWarning("UploadPlugin: Invalid file type uploaded: {FileName}", file.FileName);
-                return BadRequest("Invalid file type. Only .dll files are allowed.");
+                return BadRequest(new { message = "Invalid file type. Only .dll files are allowed." });
             }
 
             // Generate a safe file name using GUID
@@ -110,12 +105,21 @@ namespace ITTools.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> EnableTool(int toolId)
         {
-            var success = await _toolService.EnableToolAsync(toolId);
-            if (!success)
+            try
             {
-                return NotFound(new { Message = $"Tool with ID {toolId} not found or already enabled." });
+                await _toolService.EnableToolAsync(toolId);
+                return NoContent();
             }
-            return NoContent();
+            catch (NotFoundException ex)
+            {
+                _logger.LogWarning(ex, "EnableTool failed: Tool not found.");
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"EnableTool failed: {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+            }
         }
 
         // Disable a tool
@@ -124,12 +128,21 @@ namespace ITTools.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DisableTool(int toolId)
         {
-            var success = await _toolService.DisableToolAsync(toolId);
-            if (!success)
+            try
             {
-                return NotFound(new { Message = $"Tool with ID {toolId} not found or already disabled." });
+                await _toolService.DisableToolAsync(toolId);
+                return NoContent();
             }
-            return NoContent();
+            catch (NotFoundException ex)
+            {
+                _logger.LogWarning(ex, "DisableTool failed: Tool not found.");
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"DisableTool failed: {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+            }
         }
 
         // Change premium/free status for a tool
@@ -139,15 +152,23 @@ namespace ITTools.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> SetPremiumStatus(int toolId, [FromBody] SetPremiumStatusRequestDto request)
         {
-            if (request == null) return BadRequest(new { Message = "Invalid request body." });
+            if (request == null) return BadRequest(new { message = "Invalid request body." });
 
-            var success = await _toolService.SetToolPremiumStatusAsync(toolId, request.IsPremium);
-            if (!success)
+            try
             {
-                // Could be NotFound or already in the desired state, service layer handles logging
-                return NotFound(new { Message = $"Tool with ID {toolId} not found or status could not be updated." });
+                await _toolService.SetToolPremiumStatusAsync(toolId, request.IsPremium);
+                return NoContent();
             }
-            return NoContent();
+            catch (NotFoundException ex)
+            {
+                _logger.LogWarning(ex, "SetPremiumStatus failed: Tool not found.");
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"SetPremiumStatus failed: {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+            }
         }
 
         // Delete a tool
@@ -156,12 +177,21 @@ namespace ITTools.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteTool(int toolId)
         {
-            var success = await _toolService.DeleteToolAsync(toolId);
-            if (!success)
+            try
             {
-                return NotFound(new { Message = $"Tool with ID {toolId} not found." });
+                await _toolService.DeleteToolAsync(toolId);
+                return NoContent();
             }
-            return NoContent();
+            catch (NotFoundException ex)
+            {
+                _logger.LogWarning(ex, "DeleteTool failed: Tool not found.");
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"DeleteTool failed: {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+            }
         }
 
         // Execute a tool
@@ -175,42 +205,13 @@ namespace ITTools.API.Controllers
         {
             _logger.LogInformation("Received execution request for tool: {ToolName}", toolId);
 
-            // --- DEBUG LOGGING START ---
-            if (inputData != null)
-            {
-                _logger.LogInformation("Raw inputData dictionary received: {DictionaryContent}",
-                    System.Text.Json.JsonSerializer.Serialize(inputData)); // Log dictionary content
-
-                if (inputData.TryGetValue("inputText", out var valueObject))
-                {
-                    if (valueObject != null)
-                    {
-                        _logger.LogInformation("Type of value for 'inputText' key: {ValueType}", valueObject.GetType().FullName);
-                        _logger.LogInformation("Value for 'inputText' key: {Value}", valueObject.ToString());
-                    }
-                    else
-                    {
-                        _logger.LogInformation("'inputText' key found but its value is null.");
-                    }
-                }
-                else
-                {
-                    _logger.LogInformation("'inputText' key not found in the received dictionary.");
-                }
-            }
-            else
-            {
-                _logger.LogInformation("inputData received as null.");
-            }
-            // --- DEBUG LOGGING END ---
-
             try
             {
                 // Get current user from HttpContext
                 var currentUser = HttpContext.User;
 
                 // Call the execution service
-                var result = await _toolExecutionService.ExecuteToolAsync(toolId, inputData);
+                var result = await _toolExecutionService.ExecuteToolAsync(toolId, inputData, currentUser);
 
                 // Return successful result
                 return Ok(result);
@@ -224,9 +225,7 @@ namespace ITTools.API.Controllers
             catch (ToolAccessForbiddenException ex)
             {
                 _logger.LogWarning(ex, "ExecuteTool failed: Access forbidden.");
-                // Return 403 Forbidden - client needs premium
-                return Forbid(); // Returns 403
-                // Or return custom object: return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+                return Forbid();
             }
             catch (ToolInputValidationException ex)
             {

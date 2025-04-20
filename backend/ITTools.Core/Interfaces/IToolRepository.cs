@@ -10,7 +10,7 @@ namespace ITTools.Domain.Interfaces
         Task<Tool?> GetByIdAsync(int id);
         Task<Tool?> GetByNameAsync(string name);
         Task<List<Tool>> GetByAssemblyPathAsync(string assemblyPath);
-        Task<List<Tool>> GetAllAsync();
+        Task<List<Tool>> GetAllAsync(string? name = null);
         Task AddAsync(Tool tool);
         Task UpdateAsync(Tool tool);
         Task DeleteByIdAsync(int id);

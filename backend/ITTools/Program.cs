@@ -93,9 +93,13 @@ builder.Services.AddScoped<IPluginLoader, PluginLoader>();
 builder.Services.AddScoped<IPluginChangeHandler, ToolRegistrationService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IToolRepository, ToolRepository>();
+builder.Services.AddScoped<IToolGroupRepository, ToolGroupRepository>();
+builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 builder.Services.AddScoped<ToolRegistrationService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ToolService>();
+builder.Services.AddScoped<ToolGroupService>();
+builder.Services.AddScoped<FavoriteService>();
 builder.Services.AddScoped<ToolExecutionService>();
 
 builder.Services.AddHostedService<PluginWatcherService>();

@@ -35,9 +35,16 @@ namespace ITTools.Infrastructure.DataAccess
             await _context.SaveChangesAsync();
         }
 
-        public Task<List<Tool>> GetAllAsync()
+        public Task<List<Tool>> GetAllAsync(string? name)
         {
-            return _context.Tools.ToListAsync();
+            if (string.IsNullOrEmpty(name))
+            {
+                return _context.Tools.ToListAsync();
+            }
+            else
+            {
+                return _context.Tools.Where(t => t.Name.ToLower().Contains(name.Trim().ToLower())).ToListAsync();
+            }
         }
 
         public Task<Tool?> GetByIdAsync(int id)

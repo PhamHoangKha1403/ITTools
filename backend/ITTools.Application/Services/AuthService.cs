@@ -42,7 +42,8 @@ namespace ITTools.Application.Services
                 Subject = new ClaimsIdentity(
                 [
                     new Claim(ClaimTypes.Name, user.Username),
-                    new Claim(ClaimTypes.Role, user.Role.ToString())
+                    new Claim(ClaimTypes.Role, user.Role.ToString()),
+                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
                 ]),
                 Expires = DateTime.UtcNow.AddHours(3), // Longer-lived JWT since no refresh token
                 Issuer = _configuration["jwt:issuer"],

@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ITTools.Domain.Entities
+﻿namespace ITTools.Domain.Entities
 {
-    internal class ToolGroup
+    public class ToolGroup
     {
+        public int Id { get; set; }
+        public string Name { get; set; } = String.Empty;
+        public string? Description { get; set; }
     }
 }

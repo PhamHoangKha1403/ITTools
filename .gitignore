@@ -1,0 +1,14 @@
+﻿backend/ITTools/bin
+backend/ITTools/obj
+backend/ITTools/.vs
+backend/ITTools/.vs
+backend/ITTools/bin
+backend/ITTools/obj
+backend/ITTools/appsettings.json
+backend/ITTools.Application/obj
+backend/ITTools.Application/bin
+backend/ITTools.Core/bin
+backend/ITTools.Core/obj
+backend/ITTools.DataAccess/bin
+backend/ITTools.DataAccess/obj
+backend/ITTools/appsettings.Development.json

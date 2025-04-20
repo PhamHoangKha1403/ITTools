@@ -1,34 +1,46 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import Layout from './component/Layout'
+import Home from './pages/Home'
+import About from './pages/About'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import AdminLayout from './component/Admin-Layout'
+import Admin from './pages/Admin'
+import ToolPage from './pages/ToolPage'
+import Profile from './pages/Profile'
+import UserManager from './pages/UserManager'
+import ToolManager from './pages/ToolManager'
+import AddTool from './pages/AddTool'
 
 function App() {
-  const [count, setCount] = useState(0)
-
-  return (
+  return(
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route path="about" element={<About />} />
+            <Route path="tools/:toolId" element={<ToolPage />} />
+            <Route path="*" element={<div>404 Not Found</div>} />
+            <Route path="/profile/:username" element={<Profile />} />
+
+          </Route>
+
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Admin />} />
+            <Route path="users" element={<UserManager />} />
+            <Route path="tools" element={<ToolManager />} />
+            <Route path="/admin/tools/add" element={<AddTool />} />
+
+          </Route>
+        </Routes>
+
+      </BrowserRouter>
     </>
+
   )
 }
 

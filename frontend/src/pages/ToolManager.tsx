@@ -11,19 +11,26 @@ import { toast } from "react-toastify";
 function ToolManager() {
     const [tools, setTools] = useState<ToolInfo[]>([]);
 
-    const fetchTools = () => {
-        getAdminTools()
-            .then(setTools)
-            .catch(() => toast.error("Failed to load tools list"));
+    const fetchTools = async () => {
+        try {
+            const res = await getAdminTools();
+            if (res.status === 200) {
+                setTools(res.data);
+            } else {
+                toast.error(res.message || "Failed to load tools list");
+            }
+        } catch (err) {
+            toast.error("Failed to load tools list");
+        }
     };
-
+    
     useEffect(() => {
         fetchTools();
     }, []);
 
-    const handleTogglePremium = async (toolName: string) => {
+    const handleTogglePremium = async (Id: number) => {
         try {
-            await togglePremium(toolName);
+            await togglePremium(Id);
             toast.success("Premium status updated!");
             fetchTools();
         } catch {
@@ -31,9 +38,9 @@ function ToolManager() {
         }
     };
 
-    const handleToggleEnabled = async (toolName: string) => {
+    const handleToggleEnabled = async (Id: number) => {
         try {
-            await toggleEnabled(toolName);
+            await toggleEnabled(Id);
             toast.success("Tool visibility updated!");
             fetchTools();
         } catch {
@@ -41,11 +48,11 @@ function ToolManager() {
         }
     };
 
-    const handleDelete = async (toolName: string) => {
-        const confirm = window.confirm(`Are you sure to delete "${toolName}"?`);
+    const handleDelete = async (Id: number) => {
+        const confirm = window.confirm(`Are you sure to delete "${Id}"?`);
         if (!confirm) return;
         try {
-            await deleteTool(toolName);
+            await deleteTool(Id);
             toast.success("Tool deleted!");
             fetchTools();
         } catch {
@@ -83,7 +90,7 @@ function ToolManager() {
                                                 ? "text-orange-400 hover:text-orange-300"
                                                 : "text-green-400 hover:text-green-300"
                                             }`}
-                                        onClick={() => handleToggleEnabled(tool.name)}
+                                        onClick={() => handleToggleEnabled(tool.id)}
                                     >
                                         {tool.isEnabled ? "✅ Enable": "🚫 Disable"  }
                                     </button>
@@ -95,14 +102,14 @@ function ToolManager() {
                                             ? "text-yellow-400 hover:text-yellow-300"
                                             : "text-blue-400 hover:text-blue-300"
                                             }`}
-                                        onClick={() => handleTogglePremium(tool.name)}
+                                        onClick={() => handleTogglePremium(tool.id)}
                                     >
                                         {tool.isPremium ? "🔁 Downgrade" : "✨ Promote   "}
                                     </button>
 
                                     <button
                                         className="text-red-500 hover:text-red-400 hover:underline transition text-sm"
-                                        onClick={() => handleDelete(tool.name)}
+                                        onClick={() => handleDelete(tool.id)}
                                     >
                                         🗑 Delete
                                     </button>

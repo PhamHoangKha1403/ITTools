@@ -9,12 +9,19 @@ interface User {
 
 function UserManager() {
   const [users, setUsers] = useState<User[]>([]);
-
-  const fetchUsers = () => {
-    getUsers()
-      .then(setUsers)
-      .catch(() => toast.error("Failed to load users list"));
+  const fetchUsers = async () => {
+    try {
+      const res = await getUsers();
+      if (res.status === 200) {
+        setUsers(res.data); // Cập nhật danh sách người dùng
+      } else {
+        toast.error(res.message || "Failed to load users list");
+      }
+    } catch (err) {
+      toast.error("Failed to load users list");
+    }
   };
+  
 
   useEffect(() => {
     fetchUsers();

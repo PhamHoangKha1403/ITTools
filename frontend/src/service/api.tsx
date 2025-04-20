@@ -3,7 +3,9 @@ import axios from "axios";
 const API_BASE = import.meta.env.VITE_API_URL || "https://localhost:7261/api/v1";
 
 // ========== INTERFACES ==========
+
 export interface ToolInfo {
+  id: number; 
   name: string;
   description: string;
   isPremium?: boolean;
@@ -14,7 +16,7 @@ export interface ToolInfo {
 
 export interface MenuItem {
   title: string;
-  children?: { title: string }[];
+  children?: { title: string; id: number }[]; // 
 }
 
 export interface AuthResponse {
@@ -22,6 +24,8 @@ export interface AuthResponse {
     username: string;
     role: number;
   };
+  status: number;
+  message: string;
 }
 
 export interface ToolMetadata {
@@ -34,86 +38,140 @@ export interface ToolMetadata {
 
 // ========== TOOL APIs ==========
 
-// 🛠 Lấy danh sách tool
-export const getTools = async (): Promise<ToolInfo[]> => {
-  const res = await axios.get(`${API_BASE}/tools`);
+export const getTools = async (searchQuery = ""): Promise<{
+  status: number;
+  message: string;
+  data: ToolInfo[];
+}> => {
+  const res = await axios.get(`${API_BASE}/tools`, {
+    params: { search: searchQuery }
+  });
   return res.data;
 };
 
-// 📄 Lấy metadata của 1 tool
-export const getToolMetadata = async (toolId: string): Promise<ToolMetadata> => {
+
+export const getToolMetadata = async (
+  toolId: number
+): Promise<{ status: number; message: string; data: ToolMetadata }> => {
   const res = await axios.get(`${API_BASE}/tools/${toolId}/metadata`);
   return res.data;
 };
 
-// 🧪 Gửi dữ liệu để xử lý
-export const submitTool = async (toolId: string, data: any): Promise<any> => {
+export const submitTool = async (
+  toolId: number,
+  data: any
+): Promise<{ status: number; message: string; data: any }> => {
   const res = await axios.post(`${API_BASE}/tools/${toolId}`, data);
   return res.data;
 };
 
-// Toggle favorite
-export const toggleFavoriteAPI = async (toolName: string): Promise<void> => {
-  await axios.post(`${API_BASE}/favorites`, { toolName });
-};
-export const togglePremium = async (toolName: string): Promise<void> => {
-  await axios.post(`${API_BASE}/admin/tools/toggle-premium`, { toolName });
-};
-
-// ✅ Toggle enable/disable tool
-export const toggleEnabled = async (toolName: string): Promise<void> => {
-  await axios.post(`${API_BASE}/admin/tools/toggle-enabled`, { toolName });
+export const toggleFavoriteAPI = async (
+  toolId: number
+): Promise<{ status: number; message: string }> => {
+  const res = await axios.post(`${API_BASE}/favorites`, { toolId });
+  return res.data;
 };
 
-// ❌ Delete a tool
-export const deleteTool = async (toolName: string): Promise<void> => {
-  await axios.delete(`${API_BASE}/admin/tools/${toolName}`);
+export const togglePremium = async (
+  toolId: number
+): Promise<{ status: number; message: string }> => {
+  const res = await axios.post(`${API_BASE}/admin/tools/toggle-premium`, { toolId });
+  return res.data;
 };
-export const getAdminTools = async (): Promise<ToolInfo[]> => {
+
+export const toggleEnabled = async (
+  toolId: number
+): Promise<{ status: number; message: string }> => {
+  const res = await axios.post(`${API_BASE}/admin/tools/toggle-enabled`, { toolId });
+  return res.data;
+};
+
+export const deleteTool = async (
+  toolId: number
+): Promise<{ status: number; message: string }> => {
+  const res = await axios.delete(`${API_BASE}/admin/tools/${toolId}`);
+  return res.data;
+};
+
+export const getAdminTools = async (): Promise<{
+  status: number;
+  message: string;
+  data: ToolInfo[];
+}> => {
   const res = await axios.get(`${API_BASE}/admin/tools`);
   return res.data;
 };
 
-
-
 // ========== MENU ==========
-export const getMenuItems = async (): Promise<MenuItem[]> => {
+
+export const getMenuItems = async (): Promise<{
+  status: number;
+  message: string;
+  data: MenuItem[];
+}> => {
   const res = await axios.get(`${API_BASE}/menu`);
   return res.data;
 };
 
 // ========== AUTH ==========
-export const loginUser = async (userName: string, password: string): Promise<AuthResponse> => {
+
+export const loginUser = async (
+  userName: string,
+  password: string
+): Promise<AuthResponse> => {
   const res = await axios.post(`${API_BASE}/auth/login`, { userName, password });
   return res.data;
 };
 
-export const logoutUser = async (): Promise<void> => {
-  await axios.post(`${API_BASE}/auth/logout`);
+export const logoutUser = async (): Promise<{ status: number; message: string }> => {
+  const res = await axios.post(`${API_BASE}/auth/logout`);
+  return res.data;
 };
 
-export const registerUser = async (userName: string, password: string): Promise<void> => {
-  await axios.post(`${API_BASE}/auth/register`, { userName, password });
+export const registerUser = async (
+  userName: string,
+  password: string
+): Promise<{ status: number; message: string }> => {
+  const res = await axios.post(`${API_BASE}/auth/register`, { userName, password });
+  return res.data;
 };
 
 // ========== ADMIN ==========
-export const getUsers = async (): Promise<{ userName: string; role: number }[]> => {
+
+export const getUsers = async (): Promise<{
+  status: number;
+  message: string;
+  data: { userName: string; role: number }[];
+}> => {
   const res = await axios.get(`${API_BASE}/users`);
   return res.data;
 };
 
-export const changeUserRole = async (userName: string, role: number): Promise<void> => {
-  await axios.put(`${API_BASE}/users/role`, { userName, role });
+export const changeUserRole = async (
+  userName: string,
+  role: number
+): Promise<{ status: number; message: string }> => {
+  const res = await axios.put(`${API_BASE}/users/role`, { userName, role });
+  return res.data;
 };
-// 🔼 Upload tool DLL (admin)
-export const uploadToolDLL = async (file: File): Promise<void> => {
+
+export const uploadToolDLL = async (
+  file: File
+): Promise<{ status: number; message: string }> => {
   const formData = new FormData();
   formData.append("dll", file);
 
-  await axios.post(`${API_BASE}/admin/tools/upload`, formData, {
+  const res = await axios.post(`${API_BASE}/admin/tools/upload`, formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
   });
+  return res.data;
 };
 
+export const requestUpgradeAPI = async (
+  userName: string
+): Promise<{ status: number; message: string }> => {
+  const res = await axios.post(`${API_BASE}/users/request-upgrade`, { userName });
+  return res.data;
+};

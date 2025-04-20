@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -7,26 +7,34 @@ import { getTools, toggleFavoriteAPI, ToolInfo } from "../service/api";
 
 function Home() {
   const [tools, setTools] = useState<ToolInfo[]>([]);
-
+  const location = useLocation();
   const userLoggedIn = Boolean(localStorage.getItem("userName"));
 
-  useEffect(() => {
-    getTools()
-      .then(setTools)
-      .catch(() => toast.error("Failed to load tool list"));
-  }, []);
+  const query = new URLSearchParams(location.search).get("search");
 
-  const toggleFavorite = async (toolName: string) => {
+  useEffect(() => {
+    getTools(query || "")
+      .then((res) => {
+        if (res.status === 200) {
+          setTools(res.data);
+        } else {
+          toast.error(res.message || "Failed to load tool list");
+        }
+      })
+      .catch(() => toast.error("Failed to load tool list"));
+  }, [query]);
+
+  const toggleFavorite = async (toolId: number) => {
     if (!userLoggedIn) {
       toast.warning("Please log in to favorite tools");
       return;
     }
 
     try {
-      await toggleFavoriteAPI(toolName);
+      await toggleFavoriteAPI(toolId);
       setTools((prev) =>
         prev.map((tool) =>
-          tool.name === toolName
+          tool.id === toolId
             ? { ...tool, isFavorite: !tool.isFavorite }
             : tool
         )
@@ -39,7 +47,7 @@ function Home() {
   return (
     <div className="flex justify-center px-4">
       <div className="w-full max-w-screen-xl flex flex-col gap-10">
-        {tools.some((t) => t.isFavorite) && (
+        {Array.isArray(tools) && tools.some((t) => t.isFavorite) && (
           <section>
             <h2 className="text-xl font-bold text-white mb-2">Favorites 💚</h2>
             <div className="grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-6">
@@ -47,7 +55,7 @@ function Home() {
                 .filter((tool) => tool.isFavorite)
                 .map((tool) => (
                   <ToolCard
-                    key={tool.name}
+                    key={tool.id}
                     tool={tool}
                     onToggle={toggleFavorite}
                   />
@@ -61,7 +69,7 @@ function Home() {
           <div className="grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-6">
             {tools.map((tool) => (
               <ToolCard
-                key={tool.name}
+                key={tool.id}
                 tool={tool}
                 onToggle={toggleFavorite}
               />
@@ -78,11 +86,11 @@ function ToolCard({
   onToggle
 }: {
   tool: ToolInfo;
-  onToggle: (name: string) => void;
+  onToggle: (id: number) => void;
 }) {
   return (
     <Link
-      to={`/tools/${tool.name}`}
+      to={`/tools/${tool.id}`}
       className="block w-[340px] min-h-[160px] bg-neutral-700 rounded-lg p-4 shadow hover:shadow-lg transition relative"
     >
       <div className="flex justify-between items-start">
@@ -95,7 +103,7 @@ function ToolCard({
         <span
           onClick={(e) => {
             e.preventDefault();
-            onToggle(tool.name);
+            onToggle(tool.id);
           }}
           className="material-icons text-xl"
           style={{

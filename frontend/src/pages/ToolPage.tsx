@@ -31,9 +31,21 @@ function ToolPage() {
 
   useEffect(() => {
     if (!toolId) return;
+    setResult(null);
 
-    getToolMetadata(toolId)
-      .then(setMetadata)
+  
+    getToolMetadata(parseInt(toolId))
+
+      .then((res) => {
+        if (res.status === 200) {
+          setMetadata(res.data); 
+        } else {
+          toast.error(res.message);
+          setTimeout(() => {
+            window.location.href = "/";
+          }, 1500);
+        }
+      })
       .catch((err) => {
         const message = err?.response?.data?.message || "Failed to load metadata";
         toast.error(message);
@@ -46,13 +58,15 @@ function ToolPage() {
   const handleSubmit = async ({ formData }: any) => {
     if (!toolId) return;
     try {
-      const data = await submitTool(toolId, formData);
-      setResult(data);
+        const res = await submitTool(parseInt(toolId), formData);
+
+      setResult(res.data); 
     } catch (err: any) {
       const message = err?.response?.data?.message || "Failed to process tool";
       toast.error(message);
     }
   };
+  
 
   if (!metadata)
     return <div className="text-white p-8">🔄 Loading tool...</div>;

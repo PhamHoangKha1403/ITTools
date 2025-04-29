@@ -22,6 +22,7 @@ namespace ITTools.Application.Services
     {
         public ToolAccessForbiddenException(int id) : base($"Access denied to tool #{id}. Premium subscription required.") { }
     }
+
     public class ToolInputValidationException : ToolExecutionException
     {
         public IList<string> ValidationErrors { get; }
@@ -33,16 +34,16 @@ namespace ITTools.Application.Services
 
     public class ToolExecutionService
     {
-        private readonly IToolRepository _toolRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IPluginLoader _pluginLoader;
         private readonly ILogger<ToolExecutionService> _logger;
 
         public ToolExecutionService(
-            IToolRepository toolRepository,
+            IUnitOfWork unitOfWork,
             IPluginLoader pluginLoader,
             ILogger<ToolExecutionService> logger)
         {
-            _toolRepository = toolRepository ?? throw new ArgumentNullException(nameof(toolRepository));
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _pluginLoader = pluginLoader ?? throw new ArgumentNullException(nameof(pluginLoader));
             _logger = logger;
         }
@@ -51,8 +52,8 @@ namespace ITTools.Application.Services
         {
             _logger.LogInformation("Attempting to execute tool: {ToolName} for user: {UserName}", id, currentUser?.Identity?.Name ?? "Anonymous");
 
-            // 1. Get Tool Metadata from Repository
-            Tool? toolMetadata = await _toolRepository.GetByIdAsync(id);
+            // Get Tool Metadata from Repository
+            Tool? toolMetadata = await _unitOfWork.Tools.GetByIdAsync(id);
 
             if (toolMetadata == null || !toolMetadata.IsEnabled)
             {
@@ -60,7 +61,7 @@ namespace ITTools.Application.Services
                 throw new ToolNotFoundException(id);
             }
 
-            // 2. Check Permissions
+            // Check Permissions
             if (toolMetadata.IsPremium)
             {
                 // Check if user is null (anonymous) or doesn't have Premium/Admin role
@@ -71,7 +72,7 @@ namespace ITTools.Application.Services
                 }
             }
 
-            // 3. Validate Input Data against InputSchema
+            // Validate Input Data against InputSchema
             try
             {
                 JSchema schema = JSchema.Parse(toolMetadata.InputSchema);
@@ -84,15 +85,13 @@ namespace ITTools.Application.Services
                 }
                 _logger.LogInformation("Input validation successful for tool #{ToolName}.", id);
             }
-            catch (Exception ex) when (ex is not ToolInputValidationException) // Catch schema parsing or other validation errors
+            catch (Exception ex) when (ex is not ToolInputValidationException)
             {
                 _logger.LogError(ex, "Error during input schema validation for tool '{ToolName}'. Schema: {Schema}", id, toolMetadata.InputSchema);
-                // You might want a more specific exception here
                 throw new ToolExecutionException($"Failed to validate input schema for tool '{id}'.", ex);
             }
 
-
-            // 4. Get ITool Instance using Plugin Loader
+            // Get ITool Instance using Plugin Loader
             var allTools = _pluginLoader.LoadToolsFromAssembly(toolMetadata.AssemblyPath);
             ITool? toolInstance = allTools.FirstOrDefault(t => t.Name == toolMetadata.Name);
 

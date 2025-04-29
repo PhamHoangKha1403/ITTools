@@ -13,20 +13,20 @@ namespace ITTools.Application.Services
 {
     public class AuthService
     {
-        private readonly IUserRepository _userRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthService> _logger;
 
-        public AuthService(IUserRepository userRepository, IConfiguration configuration, ILogger<AuthService> logger)
+        public AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, ILogger<AuthService> logger)
         {
-            _userRepository = userRepository;
+            _unitOfWork = unitOfWork;
             _configuration = configuration;
             _logger = logger;
         }
 
         public async Task<(string?, User?)> Login(string username, string password)
         {
-            var user = await _userRepository.GetByUsernameAsync(username);
+            var user = await _unitOfWork.Users.GetByUsernameAsync(username);
             if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
                 _logger.LogWarning("Login failed for user: {Username}", username);
@@ -62,7 +62,8 @@ namespace ITTools.Application.Services
 
         public async Task Register(string username, string password)
         {
-            var existingUser = await _userRepository.GetByUsernameAsync(username);
+            var existingUser = await _unitOfWork.Users.GetByUsernameAsync(username);
+
             if (existingUser != null)
             {
                 _logger.LogWarning("Registration failed: Username already exists: {Username}", username);
@@ -77,11 +78,16 @@ namespace ITTools.Application.Services
                 Role = UserRole.User // Default role
             };
 
-            var result = await _userRepository.AddAsync(newUser);
-            if (result == 0)
+            try
             {
-                _logger.LogError("Failed to register user: {Username}", username);
-                throw new Exception("Failed to register user.");
+                await _unitOfWork.Users.AddAsync(newUser);
+                var changes = await _unitOfWork.CommitAsync();
+                _logger.LogInformation("User {Username} registered successfully. Changes committed: {Changes}", username, changes);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error registering user: {Username}", username);
+                throw;
             }
         }
     }

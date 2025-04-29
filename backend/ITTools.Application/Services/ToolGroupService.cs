@@ -7,21 +7,19 @@ namespace ITTools.Application.Services
 {
     public class ToolGroupService
     {
-        private readonly IToolGroupRepository _toolGroupRepository;
-        private readonly IToolRepository _toolRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<ToolGroupService> _logger;
 
-        public ToolGroupService(IToolGroupRepository toolGroupRepository, IToolRepository toolRepository, ILogger<ToolGroupService> logger)
+        public ToolGroupService(IUnitOfWork unitOfWork, ILogger<ToolGroupService> logger)
         {
-            _toolGroupRepository = toolGroupRepository;
-            _toolRepository = toolRepository;
+            _unitOfWork = unitOfWork;
             _logger = logger;
         }
 
         public async Task<ToolGroup?> GetToolGroupByIdAsync(int id)
         {
             _logger?.LogInformation("Attempting to get tool group with ID: {ToolGroupId}", id);
-            var toolGroup = await _toolGroupRepository.GetByIdAsync(id);
+            var toolGroup = await _unitOfWork.ToolGroups.GetByIdAsync(id);
 
             if (toolGroup == null)
             {
@@ -35,19 +33,18 @@ namespace ITTools.Application.Services
         public async Task<List<ToolGroup>> GetAllToolGroupsAsync()
         {
             _logger?.LogInformation("Attempting to get all tool groups.");
-
-            return await _toolGroupRepository.GetAllAsync();
+            return await _unitOfWork.ToolGroups.GetAllAsync();
         }
 
         public async Task<List<ToolGroupMenuDTO>> GetToolsMenu()
         {
             _logger?.LogInformation("Attempting to get tools menu.");
-            var toolGroups = await _toolGroupRepository.GetAllAsync();
+            var toolGroups = await _unitOfWork.ToolGroups.GetAllAsync();
             var toolGroupMenus = new List<ToolGroupMenuDTO>();
 
             foreach (var group in toolGroups)
             {
-                var tools = await _toolRepository.GetAllAsync();
+                var tools = await _unitOfWork.Tools.GetAllAsync();
                 var toolGroupMenu = new ToolGroupMenuDTO
                 {
                     ToolGroupId = group.Id,

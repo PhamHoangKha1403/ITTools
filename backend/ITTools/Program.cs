@@ -91,10 +91,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddScoped<IPluginLoader, PluginLoader>();
 builder.Services.AddScoped<IPluginChangeHandler, ToolRegistrationService>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IToolRepository, ToolRepository>();
-builder.Services.AddScoped<IToolGroupRepository, ToolGroupRepository>();
-builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
 builder.Services.AddScoped<ToolRegistrationService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ToolService>();

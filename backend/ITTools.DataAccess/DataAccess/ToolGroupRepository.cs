@@ -15,8 +15,7 @@ namespace ITTools.Infrastructure.DataAccess
 
         public async Task AddAsync(ToolGroup toolGroup)
         {
-            _context.ToolGroups.Add(toolGroup);
-            await _context.SaveChangesAsync();
+            await _context.ToolGroups.AddAsync(toolGroup);
         }
 
         public async Task DeleteByIdAsync(int id)
@@ -26,11 +25,6 @@ namespace ITTools.Infrastructure.DataAccess
             if (toolGroup != null)
             {
                 _context.ToolGroups.Remove(toolGroup);
-                await _context.SaveChangesAsync();
-            }
-            else
-            {
-                throw new Exception("ToolGroup not found");
             }
         }
 
@@ -49,20 +43,10 @@ namespace ITTools.Infrastructure.DataAccess
             return await _context.ToolGroups.FirstOrDefaultAsync(tg => tg.Name == name);
         }
 
-        public async Task UpdateAsync(ToolGroup toolGroup)
+        public Task UpdateAsync(ToolGroup toolGroup)
         {
-            var existingToolGroup = await _context.ToolGroups.FindAsync(toolGroup.Id);
-
-            if (existingToolGroup != null)
-            {
-                existingToolGroup.Name = toolGroup.Name;
-                existingToolGroup.Description = toolGroup.Description;
-                await _context.SaveChangesAsync();
-            }
-            else
-            {
-                throw new Exception("ToolGroup not found");
-            }
+            _context.ToolGroups.Update(toolGroup);
+            return Task.CompletedTask;
         }
     }
 }

@@ -13,13 +13,12 @@ namespace ITTools.Infrastructure.DataAccess
             _context = context;
         }
 
-        public async Task<int> AddAsync(User user)
+        public async Task AddAsync(User user)
         {
-            _context.Users.Add(user);
-            return await _context.SaveChangesAsync();
+            await _context.Users.AddAsync(user);
         }
 
-        public async Task<User> GetByUsernameAsync(string username)
+        public async Task<User?> GetByUsernameAsync(string username)
         {
             return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
         }

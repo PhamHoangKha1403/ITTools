@@ -7,14 +7,12 @@ namespace ITTools.Application.Services
 {
     public class FavoriteService
     {
-        private readonly IFavoriteRepository _favoriteRepository;
-        private readonly IToolRepository _toolRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<FavoriteService> _logger;
 
-        public FavoriteService(IFavoriteRepository favoriteRepository, IToolRepository toolRepository, ILogger<FavoriteService> logger)
+        public FavoriteService(IUnitOfWork unitOfWork, ILogger<FavoriteService> logger)
         {
-            _favoriteRepository = favoriteRepository;
-            _toolRepository = toolRepository;
+            _unitOfWork = unitOfWork;
             _logger = logger;
         }
 
@@ -23,7 +21,7 @@ namespace ITTools.Application.Services
             _logger?.LogInformation("Adding tool {ToolId} to favorites for user {UserId}", toolId, userId);
 
             // Check if the favorite already exists
-            var exists = await _favoriteRepository.ExistsAsync(userId, toolId);
+            var exists = await _unitOfWork.Favorites.ExistsAsync(userId, toolId);
             if (exists)
             {
                 _logger?.LogWarning("Tool {ToolId} is already a favorite for user {UserId}", toolId, userId);
@@ -31,7 +29,7 @@ namespace ITTools.Application.Services
             }
 
             // Check if the toolId exists
-            var tool = await _toolRepository.GetByIdAsync(toolId);
+            var tool = await _unitOfWork.Tools.GetByIdAsync(toolId);
             if (tool == null)
             {
                 _logger?.LogWarning("Tool with ID {ToolId} not found.", toolId);
@@ -46,7 +44,8 @@ namespace ITTools.Application.Services
 
             try
             {
-                await _favoriteRepository.AddAsync(favorite);
+                await _unitOfWork.Favorites.AddAsync(favorite);
+                await _unitOfWork.CommitAsync();
                 _logger?.LogInformation("Successfully added tool {ToolId} to favorites for user {UserId}", toolId, userId);
             }
             catch (Exception ex)
@@ -61,7 +60,7 @@ namespace ITTools.Application.Services
             _logger?.LogInformation("Removing tool {ToolId} from favorites for user {UserId}", toolId, userId);
 
             // Check if the favorite exists
-            var exists = await _favoriteRepository.ExistsAsync(userId, toolId);
+            var exists = await _unitOfWork.Favorites.ExistsAsync(userId, toolId);
             if (!exists)
             {
                 _logger?.LogWarning("Tool {ToolId} is not a favorite for user {UserId}", toolId, userId);
@@ -70,7 +69,8 @@ namespace ITTools.Application.Services
 
             try
             {
-                await _favoriteRepository.RemoveAsync(userId, toolId);
+                await _unitOfWork.Favorites.RemoveAsync(userId, toolId);
+                await _unitOfWork.CommitAsync();
                 _logger?.LogInformation("Successfully removed tool {ToolId} from favorites for user {UserId}", toolId, userId);
             }
             catch (Exception ex)
@@ -86,7 +86,7 @@ namespace ITTools.Application.Services
 
             try
             {
-                var favorites = await _favoriteRepository.GetByUserIdAsync(userId);
+                var favorites = await _unitOfWork.Favorites.GetByUserIdAsync(userId);
 
                 _logger?.LogInformation("Successfully retrieved {Count} favorites for user {UserId}", favorites.Count, userId);
                 return favorites;

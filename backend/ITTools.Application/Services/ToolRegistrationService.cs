@@ -9,16 +9,16 @@ namespace ITTools.Application.Services
     /// </summary>
     public class ToolRegistrationService : IPluginChangeHandler
     {
-        private readonly IToolRepository _toolRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IPluginLoader _pluginLoader;
         private readonly ILogger<ToolRegistrationService> _logger;
 
         public ToolRegistrationService(
-            IToolRepository toolRepository,
+            IUnitOfWork unitOfWork,
             IPluginLoader pluginLoader,
             ILogger<ToolRegistrationService> logger)
         {
-            _toolRepository = toolRepository ?? throw new ArgumentNullException(nameof(toolRepository));
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _pluginLoader = pluginLoader ?? throw new ArgumentNullException(nameof(pluginLoader));
             _logger = logger; // Optional
         }
@@ -50,31 +50,39 @@ namespace ITTools.Application.Services
                     }
 
                     // Check if a tool with the same name already exists
-                    var existingTool = await _toolRepository.GetByNameAsync(toolInstance.Name);
+                    var existingTool = await _unitOfWork.Tools.GetByNameAsync(toolInstance.Name);
 
-                    if (existingTool == null)
-                    {
-                        _logger?.LogInformation("Registering new tool: {ToolName} from {AssemblyPath}", toolInstance.Name, assemblyPath);
-
-                        // Create new Tool entity
-                        var newToolEntity = new Tool
-                        {
-                            Name = toolInstance.Name,
-                            Description = toolInstance.Description,
-                            GroupId = toolInstance.GroupId, // Use the obtained Group ID
-                            IsPremium = toolInstance.IsPremium,
-                            InputSchema = toolInstance.InputSchema,   // Map InputSchema
-                            OutputSchema = toolInstance.OutputSchema, // Map OutputSchema
-                            AssemblyPath = assemblyPath,
-                            IsEnabled = true // Enable by default when added
-                        };
-
-                        await _toolRepository.AddAsync(newToolEntity);
-                        _logger?.LogInformation("Successfully registered tool: {ToolName}", toolInstance.Name);
-                    }
-                    else
+                    if (existingTool != null)
                     {
                         _logger?.LogInformation("Tool '{ToolName}' already exists. Skipping registration.", toolInstance.Name);
+                        continue;
+                    }
+
+                    _logger?.LogInformation("Registering new tool: {ToolName} from {AssemblyPath}", toolInstance.Name, assemblyPath);
+
+                    // Create new Tool entity
+                    var newToolEntity = new Tool
+                    {
+                        Name = toolInstance.Name,
+                        Description = toolInstance.Description,
+                        GroupId = toolInstance.GroupId, // Use the obtained Group ID
+                        IsPremium = toolInstance.IsPremium,
+                        InputSchema = toolInstance.InputSchema,   // Map InputSchema
+                        OutputSchema = toolInstance.OutputSchema, // Map OutputSchema
+                        AssemblyPath = assemblyPath,
+                        IsEnabled = true // Enable by default when added
+                    };
+
+                    try
+                    {
+                        await _unitOfWork.Tools.AddAsync(newToolEntity);
+                        var changes = await _unitOfWork.CommitAsync();
+                        _logger?.LogInformation("Successfully registered tool: {ToolName}. Rows affected: {Count}", toolInstance.Name, changes);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogError(ex, "Error registering tool: {ToolName}", toolInstance.Name);
+                        throw;
                     }
                 }
 
@@ -95,36 +103,35 @@ namespace ITTools.Application.Services
         public async Task DisableToolsByAssemblyPathAsync(string assemblyPath)
         {
             _logger?.LogInformation("Attempting to disable tools associated with assembly: {AssemblyPath}", assemblyPath);
-            try
+            var toolsToDisable = await _unitOfWork.Tools.GetByAssemblyPathAsync(assemblyPath);
+
+            if (!toolsToDisable.Any())
             {
-                var toolsToDisable = await _toolRepository.GetByAssemblyPathAsync(assemblyPath);
-
-                if (!toolsToDisable.Any())
-                {
-                    _logger?.LogInformation("No tools found associated with assembly path {AssemblyPath} to disable.", assemblyPath);
-                    return;
-                }
-
-                foreach (var tool in toolsToDisable)
-                {
-                    if (tool.IsEnabled)
-                    {
-                        tool.IsEnabled = false;
-                        await _toolRepository.UpdateAsync(tool);
-                        _logger?.LogInformation("Disabled tool: {ToolName} (ID: {ToolId}) associated with {AssemblyPath}", tool.Name, tool.Id, assemblyPath);
-                    }
-                    else
-                    {
-                        _logger?.LogInformation("Tool: {ToolName} (ID: {ToolId}) associated with {AssemblyPath} was already disabled.", tool.Name, tool.Id, assemblyPath);
-                    }
-                }
-                _logger?.LogInformation("Finished disabling tools for assembly: {AssemblyPath}", assemblyPath);
+                _logger?.LogInformation("No tools found associated with assembly path {AssemblyPath} to disable.", assemblyPath);
+                return;
             }
-            catch (Exception ex)
+
+            foreach (var tool in toolsToDisable)
             {
-                _logger?.LogError(ex, "Error disabling tools for assembly: {AssemblyPath}", assemblyPath);
-                // Rethrow or handle
-                // throw;
+                if (!tool.IsEnabled)
+                {
+                    _logger?.LogInformation("Tool: {ToolName} (ID: {ToolId}) associated with {AssemblyPath} was already disabled.", tool.Name, tool.Id, assemblyPath);
+                    continue;
+                }
+
+                tool.IsEnabled = false;
+
+                try
+                {
+                    await _unitOfWork.Tools.UpdateAsync(tool);
+                    var changes = await _unitOfWork.CommitAsync();
+                    _logger?.LogInformation("Disabled tool: {ToolName} (ID: {ToolId}) associated with {AssemblyPath}. Rows affected: {Count}", tool.Name, tool.Id, assemblyPath, changes);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Error disabling tool: {ToolName} (ID: {ToolId}) associated with {AssemblyPath}", tool.Name, tool.Id, assemblyPath);
+                    throw;
+                }
             }
         }
 

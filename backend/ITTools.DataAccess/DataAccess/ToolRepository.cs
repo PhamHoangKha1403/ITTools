@@ -25,44 +25,39 @@ namespace ITTools.Infrastructure.DataAccess
 
         public async Task AddAsync(Tool tool)
         {
-            _context.Tools.Add(tool);
-            await _context.SaveChangesAsync();
+            await _context.Tools.AddAsync(tool);
         }
 
-        public async Task UpdateAsync(Tool tool)
+        public Task UpdateAsync(Tool tool)
         {
             _context.Tools.Update(tool);
-            await _context.SaveChangesAsync();
+            return Task.CompletedTask;
         }
 
-        public Task<List<Tool>> GetAllAsync(string? name)
+        public async Task<List<Tool>> GetAllAsync(string? name)
         {
             if (string.IsNullOrEmpty(name))
             {
-                return _context.Tools.ToListAsync();
+                return await _context.Tools.ToListAsync();
             }
             else
             {
-                return _context.Tools.Where(t => t.Name.ToLower().Contains(name.Trim().ToLower())).ToListAsync();
+                return await _context.Tools.Where(t => t.Name.ToLower().Contains(name.Trim().ToLower())).ToListAsync();
             }
         }
 
-        public Task<Tool?> GetByIdAsync(int id)
+        public async Task<Tool?> GetByIdAsync(int id)
         {
-            return _context.Tools.FirstOrDefaultAsync(t => t.Id == id);
+            return await _context.Tools.FirstOrDefaultAsync(t => t.Id == id);
         }
 
-        public Task DeleteByIdAsync(int id)
+        public async Task DeleteByIdAsync(int id)
         {
-            var tool = _context.Tools.Find(id);
+            var tool = await _context.Tools.FindAsync(id);
+
             if (tool != null)
             {
                 _context.Tools.Remove(tool);
-                return _context.SaveChangesAsync();
-            }
-            else
-            {
-                throw new Exception("Tool not found");
             }
         }
     }

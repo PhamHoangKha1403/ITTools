@@ -15,8 +15,7 @@ namespace ITTools.Infrastructure.DataAccess
 
         public async Task AddAsync(Favorite favorite)
         {
-            _context.Favorites.Add(favorite);
-            await _context.SaveChangesAsync();
+            await _context.Favorites.AddAsync(favorite);
         }
 
         public async Task<bool> ExistsAsync(int userId, int toolId)
@@ -38,8 +37,10 @@ namespace ITTools.Infrastructure.DataAccess
             var favoriteToRemove = await _context.Favorites
                 .FirstOrDefaultAsync(f => f.UserId == userId && f.ToolId == toolId);
 
-            _context.Favorites.Remove(favoriteToRemove);
-            await _context.SaveChangesAsync();
+            if (favoriteToRemove != null)
+            {
+                _context.Favorites.Remove(favoriteToRemove);
+            }
         }
     }
 }

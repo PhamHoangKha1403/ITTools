@@ -12,21 +12,19 @@ namespace ITTools.Application.Services
     /// </summary>
     public class ToolService
     {
-        private readonly IToolRepository _toolRepository;
-        private readonly IToolGroupRepository _toolGroupRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<ToolService> _logger;
 
-        public ToolService(IToolRepository toolRepository, IToolGroupRepository toolGroupRepository, ILogger<ToolService> logger)
+        public ToolService(IUnitOfWork unitOfWork, ILogger<ToolService> logger)
         {
-            _toolRepository = toolRepository;
-            _toolGroupRepository = toolGroupRepository;
+            _unitOfWork = unitOfWork;
             _logger = logger;
         }
 
         public async Task EnableToolAsync(int toolId)
         {
             _logger?.LogInformation("Attempting to enable tool with ID: {ToolId}", toolId);
-            var tool = await _toolRepository.GetByIdAsync(toolId);
+            var tool = await _unitOfWork.Tools.GetByIdAsync(toolId);
 
             if (tool == null)
             {
@@ -41,9 +39,11 @@ namespace ITTools.Application.Services
             }
 
             tool.IsEnabled = true;
+
             try
             {
-                await _toolRepository.UpdateAsync(tool);
+                await _unitOfWork.Tools.UpdateAsync(tool);
+                await _unitOfWork.CommitAsync();
                 _logger?.LogInformation("Successfully enabled tool: {ToolName} (ID: {ToolId})", tool.Name, toolId);
             }
             catch (Exception ex)
@@ -56,7 +56,7 @@ namespace ITTools.Application.Services
         public async Task DisableToolAsync(int toolId)
         {
             _logger?.LogInformation("Attempting to disable tool with ID: {ToolId}", toolId);
-            var tool = await _toolRepository.GetByIdAsync(toolId);
+            var tool = await _unitOfWork.Tools.GetByIdAsync(toolId);
 
             if (tool == null)
             {
@@ -73,7 +73,8 @@ namespace ITTools.Application.Services
             tool.IsEnabled = false;
             try
             {
-                await _toolRepository.UpdateAsync(tool);
+                await _unitOfWork.Tools.UpdateAsync(tool);
+                await _unitOfWork.CommitAsync();
                 _logger?.LogInformation("Successfully disabled tool: {ToolName} (ID: {ToolId})", tool.Name, toolId);
             }
             catch (Exception ex)
@@ -86,7 +87,7 @@ namespace ITTools.Application.Services
         public async Task DeleteToolAsync(int toolId)
         {
             _logger?.LogInformation("Attempting to delete tool with ID: {ToolId}", toolId);
-            var tool = await _toolRepository.GetByIdAsync(toolId); // Check if exists before deleting
+            var tool = await _unitOfWork.Tools.GetByIdAsync(toolId); // Check if exists before deleting
 
             if (tool == null)
             {
@@ -94,12 +95,14 @@ namespace ITTools.Application.Services
                 throw new NotFoundException($"Tool with ID {toolId} not found!");
             }
 
-            var assemblyPath = tool.AssemblyPath; // Lấy đường dẫn DLL
+            var assemblyPath = tool.AssemblyPath;
+            var toolName = tool.Name;
 
             try
             {
-                await _toolRepository.DeleteByIdAsync(toolId);
-                _logger?.LogInformation("Successfully deleted tool: {ToolName} (ID: {ToolId})", tool.Name, toolId);
+                await _unitOfWork.Tools.DeleteByIdAsync(toolId);
+                int changes = await _unitOfWork.CommitAsync();
+                _logger?.LogInformation("Successfully committed database changes for deleting Tool ID {ToolId}. Rows affected: {Count}", toolId, changes);
             }
             catch (Exception ex)
             {
@@ -137,7 +140,7 @@ namespace ITTools.Application.Services
         {
             try
             {
-                var tool = await _toolRepository.GetByIdAsync(id);
+                var tool = await _unitOfWork.Tools.GetByIdAsync(id);
                 if (tool == null || !tool.IsEnabled) throw new NotFoundException("Tool not found or disabled");
                 var assembly = Assembly.LoadFrom(tool.AssemblyPath);
                 var toolType = assembly.GetTypes().FirstOrDefault(t => typeof(ITool).IsAssignableFrom(t) && !t.IsAbstract);
@@ -153,17 +156,10 @@ namespace ITTools.Application.Services
             }
         }
 
-        // --- Phương thức mới để thay đổi trạng thái Premium ---
-        /// <summary>
-        /// Sets the premium status for a specific tool.
-        /// </summary>
-        /// <param name="toolId">The ID of the tool to modify.</param>
-        /// <param name="isPremium">The desired premium status (true for premium, false for free).</param>
-        /// <returns>True if the tool was found and updated successfully, false otherwise.</returns>
         public async Task SetToolPremiumStatusAsync(int toolId, bool isPremium)
         {
             _logger?.LogInformation("Attempting to set premium status to {IsPremium} for tool ID: {ToolId}", isPremium, toolId);
-            var tool = await _toolRepository.GetByIdAsync(toolId);
+            var tool = await _unitOfWork.Tools.GetByIdAsync(toolId);
 
             if (tool == null)
             {
@@ -178,10 +174,12 @@ namespace ITTools.Application.Services
             }
 
             tool.IsPremium = isPremium;
+
             try
             {
-                await _toolRepository.UpdateAsync(tool);
-                _logger?.LogInformation("Successfully set premium status to {IsPremium} for tool: {ToolName} (ID: {ToolId})", isPremium, tool.Name, toolId);
+                await _unitOfWork.Tools.UpdateAsync(tool);
+                var changes = await _unitOfWork.CommitAsync();
+                _logger?.LogInformation("Successfully set premium status for tool: {ToolName} (ID: {ToolId}) to {IsPremium}.Rows affected: {Count}", tool.Name, toolId, isPremium, changes);
             }
             catch (Exception ex)
             {
@@ -190,18 +188,14 @@ namespace ITTools.Application.Services
             }
         }
 
-        /// <summary>
-        /// Gets a list of all tools for management purposes.
-        /// </summary>
-        /// <returns>A list of Tool objects.</returns>
         public async Task<List<ToolDTO>> GetAllToolsAsync(string? name)
         {
             _logger?.LogInformation("Fetching all tools.");
             try
             {
                 // Assuming GetAllAsync exists in the repository
-                var allTools = await _toolRepository.GetAllAsync(name);
-                var allToolGroups = await _toolGroupRepository.GetAllAsync();
+                var allTools = await _unitOfWork.Tools.GetAllAsync(name);
+                var allToolGroups = await _unitOfWork.ToolGroups.GetAllAsync();
 
                 // Map to DTOs
                 var toolDTOs = allTools.Select(tool => new ToolDTO

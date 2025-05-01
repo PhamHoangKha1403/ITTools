@@ -93,7 +93,6 @@ builder.Services.AddScoped<IPluginLoader, PluginLoader>();
 builder.Services.AddScoped<IPluginChangeHandler, ToolRegistrationService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-builder.Services.AddScoped<ToolRegistrationService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ToolService>();
 builder.Services.AddScoped<ToolGroupService>();

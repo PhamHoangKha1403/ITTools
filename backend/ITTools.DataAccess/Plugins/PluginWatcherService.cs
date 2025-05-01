@@ -92,45 +92,52 @@ namespace ITTools.Infrastructure.Watchers
             return Task.CompletedTask;
         }
 
-        private async void OnPluginCreated(object sender, FileSystemEventArgs e)
+        private void OnPluginCreated(object sender, FileSystemEventArgs e)
         {
             _logger.LogInformation("Plugin DLL created: {FullPath}", e.FullPath);
-            await Task.Delay(500); // Small delay to ensure file is ready
 
-            if (!File.Exists(e.FullPath))
+            Task.Run(async () =>
             {
-                _logger.LogWarning("File {FullPath} detected by 'Created' event no longer exists. Skipping registration.", e.FullPath);
-                return;
-            }
+                await Task.Delay(500); // Small delay to ensure file is ready
 
-            using var scope = _serviceProvider.CreateScope();
-            var pluginChangeHandler = scope.ServiceProvider.GetRequiredService<IPluginChangeHandler>();
+                if (!File.Exists(e.FullPath))
+                {
+                    _logger.LogWarning("File {FullPath} detected by 'Created' event no longer exists. Skipping registration.", e.FullPath);
+                    return;
+                }
 
-            try
-            {
-                await pluginChangeHandler.HandlePluginCreatedAsync(e.FullPath);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing created plugin file: {FullPath}", e.FullPath);
-            }
+                using var scope = _serviceProvider.CreateScope();
+                var pluginChangeHandler = scope.ServiceProvider.GetRequiredService<IPluginChangeHandler>();
+
+                try
+                {
+                    await pluginChangeHandler.HandlePluginCreatedAsync(e.FullPath);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error processing created plugin file: {FullPath}", e.FullPath);
+                }
+            });
         }
 
-        private async void OnPluginDeleted(object sender, FileSystemEventArgs e)
+        private void OnPluginDeleted(object sender, FileSystemEventArgs e)
         {
             _logger.LogInformation("Plugin DLL deleted: {FullPath}", e.FullPath);
 
-            using var scope = _serviceProvider.CreateScope();
-            var pluginChangeHandler = scope.ServiceProvider.GetRequiredService<IPluginChangeHandler>();
+            Task.Run(async () =>
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var pluginChangeHandler = scope.ServiceProvider.GetRequiredService<IPluginChangeHandler>();
 
-            try
-            {
-                await pluginChangeHandler.HandlePluginDeletedAsync(e.FullPath);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing deleted plugin file event for path: {FullPath}", e.FullPath);
-            }
+                try
+                {
+                    await pluginChangeHandler.HandlePluginDeletedAsync(e.FullPath);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error processing deleted plugin file event for path: {FullPath}", e.FullPath);
+                }
+            });
         }
 
         // Handle errors from the FileSystemWatcher

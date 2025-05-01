@@ -221,5 +221,25 @@ namespace ITTools.Application.Services
                 throw;
             }
         }
+
+        public async Task<Tool?> GetByIdAsync(int id)
+        {
+            _logger?.LogInformation("Fetching tool by ID: {ToolId}", id);
+            try
+            {
+                var tool = await _unitOfWork.Tools.GetByIdAsync(id);
+                if (tool == null)
+                {
+                    _logger?.LogWarning("Tool with ID {ToolId} not found.", id);
+                    throw new NotFoundException($"Tool with ID {id} not found!");
+                }
+                return tool;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error fetching tool by ID: {ToolId}", id);
+                throw;
+            }
+        }
     }
 }

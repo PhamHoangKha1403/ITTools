@@ -47,7 +47,7 @@ namespace ITTools.API.Controllers
                 {
                     HttpOnly = true,
                     Secure = true, // Requires HTTPS
-                    SameSite = SameSiteMode.Strict,
+                    SameSite = SameSiteMode.Lax,
                     Expires = DateTimeOffset.UtcNow.AddHours(3) // Match JWT expiration
                 });
 

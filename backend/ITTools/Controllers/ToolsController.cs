@@ -52,6 +52,37 @@ namespace ITTools.API.Controllers
             return Ok(new { data = tools });
         }
 
+        [HttpGet("{toolId:int}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetToolById(int toolId)
+        {
+            _logger.LogInformation("Request to get tool by ID: {ToolId}", toolId);
+
+            try
+            {
+                var tool = await _toolService.GetByIdAsync(toolId);
+                if (tool == null)
+                {
+                    _logger.LogWarning("Tool with ID {ToolId} not found.", toolId);
+                    return NotFound(new { message = $"Tool with ID {toolId} not found." });
+                }
+                return Ok(new { data = tool });
+            }
+            catch (NotFoundException ex)
+            {
+                _logger.LogWarning(ex, "GetToolById failed: Tool not found.");
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GetToolById failed: {Message}", ex.Message);
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+
+            }
+        }
+
         // Endpoint to upload new DLL plugin file
         [HttpPost("upload")]
         [ProducesResponseType(StatusCodes.Status200OK)]

@@ -6,6 +6,7 @@
         public IToolGroupRepository ToolGroups { get; }
         public IUserRepository Users { get; }
         public IFavoriteRepository Favorites { get; }
+        public IUpgradeRequestRepository UpgradeRequests { get; }
 
         /// <summary>
         /// Commits all changes made to the database.

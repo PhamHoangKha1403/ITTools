@@ -12,12 +12,14 @@ namespace ITTools.Infrastructure.DataAccess
         private IUserRepository? _userRepository;
         private IFavoriteRepository? _favoriteRepository;
         private IToolGroupRepository? _toolGroupRepository;
+        private IUpgradeRequestRepository? _upgradeRequestRepository;
 
         // Lazy loading
         public IToolRepository Tools => _toolRepository ??= new ToolRepository(_context);
         public IToolGroupRepository ToolGroups => _toolGroupRepository ??= new ToolGroupRepository(_context);
         public IUserRepository Users => _userRepository ??= new UserRepository(_context);
         public IFavoriteRepository Favorites => _favoriteRepository ??= new FavoriteRepository(_context);
+        public IUpgradeRequestRepository UpgradeRequests => _upgradeRequestRepository ??= new UpgradeRequestRepository(_context);
 
         public UnitOfWork(ApplicationDbContext context, ILogger<UnitOfWork> logger)
         {

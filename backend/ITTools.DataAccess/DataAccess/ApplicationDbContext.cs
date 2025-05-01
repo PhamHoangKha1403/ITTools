@@ -12,6 +12,7 @@ namespace ITTools.Infrastructure.DataAccess
         public DbSet<ToolGroup> ToolGroups { get; set; }
         public DbSet<Favorite> Favorites { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<PremiumUpgradeRequest> PremiumUpgradeRequests { get; set; }
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)

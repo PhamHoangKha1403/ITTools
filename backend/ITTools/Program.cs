@@ -94,12 +94,24 @@ builder.Services.AddScoped<IPluginChangeHandler, ToolRegistrationService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<ToolService>();
 builder.Services.AddScoped<ToolGroupService>();
 builder.Services.AddScoped<FavoriteService>();
 builder.Services.AddScoped<ToolExecutionService>();
 
 builder.Services.AddHostedService<PluginWatcherService>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost5173", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 
 var app = builder.Build();
 
@@ -118,6 +130,8 @@ else
     app.UseExceptionHandler("/error");
     app.UseHsts();
 }
+
+app.UseCors("AllowLocalhost5173");
 
 app.UseHttpsRedirection();
 app.UseAuthentication();

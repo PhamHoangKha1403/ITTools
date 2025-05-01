@@ -22,5 +22,15 @@ namespace ITTools.Infrastructure.DataAccess
         {
             return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
         }
+
+        public async Task<User?> GetByIdAsync(int id)
+        {
+            return await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+        }
+
+        public async Task<IEnumerable<User>> GetAllAsync()
+        {
+            return await _context.Users.ToListAsync();
+        }
     }
 }

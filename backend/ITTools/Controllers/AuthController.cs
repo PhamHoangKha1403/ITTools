@@ -111,6 +111,7 @@ namespace ITTools.API.Controllers
         private static UserDTO UserToDTO(User user) =>
            new UserDTO
            {
+               Id = user.Id,
                Username = user.Username,
                Role = user.Role
            };

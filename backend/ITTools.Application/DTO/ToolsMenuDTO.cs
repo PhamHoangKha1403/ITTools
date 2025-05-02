@@ -12,5 +12,7 @@
     {
         public int Id { get; set; }
         public string Name { get; set; } = String.Empty;
+        public bool IsPremium { get; set; } = false;
+        public bool IsEnabled { get; set; } = true;
     }
 }

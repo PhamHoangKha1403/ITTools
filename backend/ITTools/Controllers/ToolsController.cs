@@ -88,46 +88,70 @@ namespace ITTools.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UploadPlugin(IFormFile file)
+        public async Task<IActionResult> UploadPlugin(List<IFormFile> files)
         {
-            if (file == null || file.Length == 0)
+            if (files == null || !files.Any())
             {
-                _logger.LogWarning("UploadPlugin: No file uploaded.");
-                return BadRequest(new { message = "No file uploaded." });
+                _logger.LogWarning("UploadPlugin: No files uploaded.");
+                return BadRequest(new { message = "No files uploaded." });
             }
 
-            // Basic validation: check for .dll extension
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (extension != ".dll")
+            var uploadResults = new List<object>();
+
+            foreach (var file in files)
             {
-                _logger.LogWarning("UploadPlugin: Invalid file type uploaded: {FileName}", file.FileName);
-                return BadRequest(new { message = "Invalid file type. Only .dll files are allowed." });
-            }
-
-            // Generate a safe file name using GUID
-            var fileName = $"{Guid.NewGuid()}{extension}";
-            var filePath = Path.Combine(_pluginDirectoryPath, fileName);
-
-            _logger.LogInformation("Attempting to save uploaded plugin to: {FilePath}", filePath);
-
-            try
-            {
-                // Ensure directory exists one more time before saving
-                if (!Directory.Exists(_pluginDirectoryPath)) { Directory.CreateDirectory(_pluginDirectoryPath); }
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                if (file == null || file.Length == 0)
                 {
-                    await file.CopyToAsync(stream);
+                    _logger.LogWarning("UploadPlugin: Empty file skipped.");
+                    uploadResults.Add(new { fileName = file?.FileName, status = "Failed", message = "File is empty." });
+                    continue;
                 }
-                _logger.LogInformation("Successfully saved plugin file: {FilePath}", filePath);
-                // The PluginWatcherService will handle registration automatically
-                return Ok(new { message = $"File {fileName} uploaded successfully. Tool registration will be processed automatically." });
+
+                // Basic validation: check for .dll extension
+                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (extension != ".dll")
+                {
+                    _logger.LogWarning("UploadPlugin: Invalid file type uploaded: {FileName}", file.FileName);
+                    uploadResults.Add(new { fileName = file.FileName, status = "Failed", message = "Invalid file type. Only .dll files are allowed." });
+                    continue;
+                }
+
+                var fileName = Path.GetFileName(file.FileName);
+                var filePath = Path.Combine(_pluginDirectoryPath, fileName);
+
+                _logger.LogInformation("Attempting to save uploaded plugin to: {FilePath}", filePath);
+
+                try
+                {
+                    // Ensure directory exists one more time before saving  
+                    if (!Directory.Exists(_pluginDirectoryPath))
+                    {
+                        Directory.CreateDirectory(_pluginDirectoryPath);
+                    }
+
+                    // Delete the old file if it exists  
+                    if (System.IO.File.Exists(filePath))
+                    {
+                        System.IO.File.Delete(filePath);
+                        _logger.LogInformation("Deleted existing plugin file: {FilePath}", filePath);
+                    }
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await file.CopyToAsync(stream);
+                    }
+
+                    _logger.LogInformation("Successfully saved plugin file: {FilePath}", filePath);
+                    uploadResults.Add(new { fileName = fileName, status = "Success", message = "File uploaded successfully. Tool registration will be processed automatically." });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error saving uploaded plugin file: {FileName}", fileName);
+                    uploadResults.Add(new { fileName = fileName, status = "Failed", message = "An error occurred while saving the plugin file." });
+                }
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error saving uploaded plugin file: {FileName}", fileName);
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while saving the plugin file.");
-            }
+
+            return Ok(new { results = uploadResults });
         }
 
         // Enable a tool

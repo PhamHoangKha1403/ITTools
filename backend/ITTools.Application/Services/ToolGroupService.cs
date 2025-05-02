@@ -54,7 +54,9 @@ namespace ITTools.Application.Services
                      .Select(t => new MinimalToolDTO
                      {
                          Id = t.Id,
-                         Name = t.Name
+                         Name = t.Name,
+                         IsPremium = t.IsPremium,
+                         IsEnabled = t.IsEnabled
                      })
                      .ToList()
                 };

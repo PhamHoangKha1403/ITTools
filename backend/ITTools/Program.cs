@@ -113,7 +113,22 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost5173", policy =>
+    {
+        policy.WithOrigins("https://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 var app = builder.Build();
+
+// Áp dụng CORS
+app.UseCors("AllowLocalhost5173");
+
 
 app.UseMiddleware<GlobalRoutePrefixMiddleware>("/api/v1");
 app.UsePathBase(new PathString("/api/v1"));

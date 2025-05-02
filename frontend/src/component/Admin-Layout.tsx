@@ -10,6 +10,8 @@ function AdminLayout() {
           <Link to="/admin/users" className="block hover:text-emerald-400">User Manager</Link>
           <Link to="/admin/tools" className="block hover:text-emerald-400">Tool Manager</Link>
           <Link to="/admin/tools/add" className="block hover:text-emerald-400">Add Tool</Link>
+          <Link to="/admin/premium-requests" className="block hover:text-emerald-400">Premium Requests</Link>
+ 
         </nav>
       </aside>
       <main className="flex-1 p-6">

@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import { uploadToolDLL } from "../service/api";
 
 function AddTool() {
-  const [file, setFile] = useState<File | null>(null);
+  const [file, setFile] = useState<File[]>([]);
+
   const [loading, setLoading] = useState(false);
 
   const handleUpload = async () => {
@@ -22,6 +23,10 @@ function AddTool() {
 
   return (
     <div className="text-white p-6 max-w-xl mx-auto">
+
+      <ToastContainer />
+
+
       <h2 className="text-2xl font-bold mb-6">➕ Upload New Tool</h2>
 
       <div className="bg-neutral-800 rounded p-6 shadow border border-neutral-700 space-y-4">
@@ -30,9 +35,11 @@ function AddTool() {
           <input
             type="file"
             accept=".dll"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
+            multiple
+            onChange={(e) => setFile(Array.from(e.target.files || []))}
             className="block w-full text-sm text-gray-300 file:bg-emerald-600 file:text-white file:px-3 file:py-1 file:rounded file:mr-4"
           />
+
         </div>
 
         <button

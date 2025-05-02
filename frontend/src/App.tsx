@@ -11,6 +11,7 @@ import Profile from './pages/Profile'
 import UserManager from './pages/UserManager'
 import ToolManager from './pages/ToolManager'
 import AddTool from './pages/AddTool'
+import PremiumRequestManager from './pages/PremiumRequestManager' 
 
 function App() {
   return(
@@ -35,6 +36,7 @@ function App() {
             <Route path="users" element={<UserManager />} />
             <Route path="tools" element={<ToolManager />} />
             <Route path="/admin/tools/add" element={<AddTool />} />
+            <Route path="/admin/premium-requests" element={<PremiumRequestManager/>} />
 
           </Route>
         </Routes>

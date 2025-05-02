@@ -4,6 +4,8 @@ import Form from "@rjsf/mui";
 import validator from "@rjsf/validator-ajv8";
 import OutputDisplay from "../component/OutputDisplay";
 import { toast } from "react-toastify";
+import { WidgetProps } from "@rjsf/utils";
+import { Switch, FormControlLabel } from "@mui/material";
 import {
   ThemeProvider,
   CssBaseline,
@@ -23,6 +25,17 @@ const darkTheme = createTheme({
     },
   },
 });
+const ToggleWidget = ({ value, onChange, label }: WidgetProps) => (
+  <FormControlLabel
+    control={
+      <Switch
+        checked={!!value}
+        onChange={(event) => onChange(event.target.checked)}
+      />
+    }
+    label={label}
+  />
+);
 
 function ToolPage() {
   const { toolId } = useParams();
@@ -30,43 +43,45 @@ function ToolPage() {
   const [result, setResult] = useState<any>(null);
 
   useEffect(() => {
+    console.log("toolId:", toolId);
     if (!toolId) return;
     setResult(null);
 
-  
+    console.log("toolId:", toolId);
     getToolMetadata(parseInt(toolId))
 
       .then((res) => {
         if (res.status === 200) {
-          setMetadata(res.data); 
+          console.log("data:", res.data.data);
+          setMetadata(res.data.data);
         } else {
-          toast.error(res.message);
+          toast.error(res.data.message);
           setTimeout(() => {
-            window.location.href = "/";
-          }, 1500);
+            toast.error(res.data.message || "Tool not found");
+          });
         }
       })
       .catch((err) => {
         const message = err?.response?.data?.message || "Failed to load metadata";
         toast.error(message);
         setTimeout(() => {
-          window.location.href = "/";
-        }, 1500);
+          // window.location.href = "/";
+        });
       });
   }, [toolId]);
 
   const handleSubmit = async ({ formData }: any) => {
     if (!toolId) return;
     try {
-        const res = await submitTool(parseInt(toolId), formData);
+      const res = await submitTool(parseInt(toolId), formData);
 
-      setResult(res.data); 
+      setResult(res.data);
     } catch (err: any) {
       const message = err?.response?.data?.message || "Failed to process tool";
       toast.error(message);
     }
   };
-  
+
 
   if (!metadata)
     return <div className="text-white p-8">🔄 Loading tool...</div>;
@@ -91,14 +106,12 @@ function ToolPage() {
           }}
         >
           <Form
-            schema={metadata.inputSchema}
+            schema={JSON.parse(metadata.inputSchema).schema}
+            uiSchema={JSON.parse(metadata.inputSchema).uiSchema}
             onSubmit={handleSubmit}
             validator={validator}
-            uiSchema={{
-              "ui:submitButtonOptions": {
-                submitText: "✨ SUBMIT ✨",
-              },
-            }}
+            widgets={{ toggle: ToggleWidget }}
+
           />
         </Box>
 
@@ -107,9 +120,10 @@ function ToolPage() {
             <Typography variant="h6" color="primary" gutterBottom>
               💡 Result
             </Typography>
+       
             <OutputDisplay
               output={result}
-              outputSchema={metadata.outputSchema}
+              outputSchema={JSON.parse(metadata.outputSchema)}
             />
           </Box>
         )}

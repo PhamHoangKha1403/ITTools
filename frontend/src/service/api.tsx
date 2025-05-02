@@ -1,24 +1,52 @@
-import axios from "axios";
+import axios, { AxiosResponse } from 'axios';
+
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://localhost:7261/api/v1";
 
 // ========== INTERFACES ==========
 
 export interface ToolInfo {
-  id: number; 
+  id: number;
   name: string;
   description: string;
   isPremium?: boolean;
-  isFavorite?: boolean;
   isEnabled?: boolean;
-  category?: string;
+  group?: {
+    id: number;
+    name: string;
+    description: string | null;
+  }
 }
-
+export interface User {
+   id: number;
+   username: string;
+  role: number;
+   }
 export interface MenuItem {
-  title: string;
-  children?: { title: string; id: number }[]; // 
+  toolGroupId: number;
+  toolGroupName: string;
+  toolGroupDescription: string | null;
+  tools: {
+    id: number;
+    name: string;
+    isPremium?: boolean;
+    isEnabled?: boolean;
+  }[];
 }
 
+
+
+export interface PremiumRequest {
+  id: number;
+  userId: number;
+  requestTimestamp: string; 
+  status: number; 
+  processedByUserId?: number | null;
+  processedTimestamp?: string | null;
+  adminNotes?: string | null;
+
+  username?: string;
+}
 export interface AuthResponse {
   user: {
     username: string;
@@ -38,60 +66,86 @@ export interface ToolMetadata {
 
 // ========== TOOL APIs ==========
 
-export const getTools = async (searchQuery = ""): Promise<{
-  status: number;
-  message: string;
-  data: ToolInfo[];
-}> => {
+export const getTools = async (searchQuery = "") => {
   const res = await axios.get(`${API_BASE}/tools`, {
-    params: { search: searchQuery }
+    params: { name: searchQuery }
   });
-  return res.data;
+  return res;
 };
 
 
 export const getToolMetadata = async (
   toolId: number
-): Promise<{ status: number; message: string; data: ToolMetadata }> => {
-  const res = await axios.get(`${API_BASE}/tools/${toolId}/metadata`);
-  return res.data;
+) => {
+  const res = await axios.get(`${API_BASE}/tools/${toolId}`);
+  return res;
 };
 
 export const submitTool = async (
   toolId: number,
   data: any
-): Promise<{ status: number; message: string; data: any }> => {
-  const res = await axios.post(`${API_BASE}/tools/${toolId}`, data);
-  return res.data;
+) => {
+  const res = await axios.post(`${API_BASE}/tools/${toolId}/execute`, data);
+  return res;
 };
 
-export const toggleFavoriteAPI = async (
-  toolId: number
-): Promise<{ status: number; message: string }> => {
-  const res = await axios.post(`${API_BASE}/favorites`, { toolId });
-  return res.data;
-};
 
 export const togglePremium = async (
-  toolId: number
+  toolId: number,
+  isPremium: boolean
 ): Promise<{ status: number; message: string }> => {
-  const res = await axios.post(`${API_BASE}/admin/tools/toggle-premium`, { toolId });
+  const res = await axios.patch(`${API_BASE}/tools/${toolId}/premium`, {
+    isPremium,
+  });
   return res.data;
 };
 
-export const toggleEnabled = async (
+
+export const enableTool = async (
   toolId: number
 ): Promise<{ status: number; message: string }> => {
-  const res = await axios.post(`${API_BASE}/admin/tools/toggle-enabled`, { toolId });
+  const res = await axios.patch(`${API_BASE}/tools/${toolId}/enable`);
+  return res.data;
+};
+
+export const disableTool = async (
+  toolId: number
+): Promise<{ status: number; message: string }> => {
+  const res = await axios.patch(`${API_BASE}/tools/${toolId}/disable`);
   return res.data;
 };
 
 export const deleteTool = async (
   toolId: number
 ): Promise<{ status: number; message: string }> => {
-  const res = await axios.delete(`${API_BASE}/admin/tools/${toolId}`);
+  const res = await axios.delete(`${API_BASE}/tools/${toolId}`);
   return res.data;
 };
+// ========== FAVORITES ==========
+
+export const getFavoriteTools = async () => {
+  const res = await axios.get(`${API_BASE}/favorites`, { withCredentials: true });
+  return res;
+};
+export const toggleFavoriteAPI = async (
+  toolId: number
+) => {
+  const res = await axios.post(
+    `${API_BASE}/favorites/${toolId}`,
+    {},
+    { withCredentials: true }
+  );
+  return res;
+};
+export const removeFavoriteAPI = async (toolId: number) => {
+  const res = await axios.delete(`${API_BASE}/favorites/${toolId}`, {
+    withCredentials: true
+  });
+  return res;
+};
+
+
+
 
 export const getAdminTools = async (): Promise<{
   status: number;
@@ -104,23 +158,24 @@ export const getAdminTools = async (): Promise<{
 
 // ========== MENU ==========
 
-export const getMenuItems = async (): Promise<{
+export const getMenuItems = async (): Promise<AxiosResponse<{
   status: number;
   message: string;
   data: MenuItem[];
-}> => {
-  const res = await axios.get(`${API_BASE}/menu`);
-  return res.data;
+}>> => {
+  const res = await axios.get(`${API_BASE}/tool-groups/menu`);
+  return res;
 };
+
 
 // ========== AUTH ==========
 
 export const loginUser = async (
   userName: string,
   password: string
-): Promise<AuthResponse> => {
-  const res = await axios.post(`${API_BASE}/auth/login`, { userName, password });
-  return res.data;
+) => {
+  const res = await axios.post(`${API_BASE}/auth/login`, { userName, password }, { withCredentials: true });
+  return res;
 };
 
 export const logoutUser = async (): Promise<{ status: number; message: string }> => {
@@ -131,47 +186,86 @@ export const logoutUser = async (): Promise<{ status: number; message: string }>
 export const registerUser = async (
   userName: string,
   password: string
-): Promise<{ status: number; message: string }> => {
+) => {
   const res = await axios.post(`${API_BASE}/auth/register`, { userName, password });
-  return res.data;
+  return res;
 };
 
 // ========== ADMIN ==========
 
-export const getUsers = async (): Promise<{
-  status: number;
-  message: string;
-  data: { userName: string; role: number }[];
-}> => {
-  const res = await axios.get(`${API_BASE}/users`);
-  return res.data;
+export const getUsers = async () => {
+  const res = await axios.get(`${API_BASE}/users`, { withCredentials: true });
+  return res;
 };
 
-export const changeUserRole = async (
-  userName: string,
-  role: number
-): Promise<{ status: number; message: string }> => {
-  const res = await axios.put(`${API_BASE}/users/role`, { userName, role });
-  return res.data;
+
+
+export const approvePremiumRequest = async (
+  userId: number,
+  notes: string = ""
+): Promise<AxiosResponse> => {
+  const url = `${API_BASE}/users/premium-requests/${userId}`;
+  const requestBody = {
+      status: 0,
+      notes: notes
+  };
+  const config = {
+      headers: {
+          'Content-Type': 'application/json-patch+json',
+          'accept': '*/*',
+        
+      },
+      withCredentials: true
+  };
+      const res = await axios.patch(url, requestBody, config);
+      return res
+ 
 };
+
+export const rejectPremiumRequest = async (
+  userId: number
+): Promise<AxiosResponse> => {
+  const url = `${API_BASE}/users/premium-requests/${userId}`;
+   const config = {
+      headers: {
+          'accept': '*/*',
+    
+      }
+      ,
+        withCredentials: true
+      
+  };
+
+
+      const res = await axios.delete(url, config);
+      return res
+
+};
+
 
 export const uploadToolDLL = async (
-  file: File
+  files: File[]
 ): Promise<{ status: number; message: string }> => {
   const formData = new FormData();
-  formData.append("dll", file);
-
-  const res = await axios.post(`${API_BASE}/admin/tools/upload`, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
+  files.forEach((file) => {
+    formData.append("files", file);
   });
+
+  const res = await axios.post(`${API_BASE}/tools/upload`, formData);
   return res.data;
 };
+export const getPremiumRequests = async (): Promise<AxiosResponse<{ data: PremiumRequest[] }>> => {
+  const url = `${API_BASE}/users/premium-requests`;
+  const config = { withCredentials: true };
+  return axios.get(url, config);
+};
 
-export const requestUpgradeAPI = async (
-  userName: string
-): Promise<{ status: number; message: string }> => {
-  const res = await axios.post(`${API_BASE}/users/request-upgrade`, { userName });
-  return res.data;
+
+export const requestUpgradeAPI = async () => {
+  const res = await axios.post(
+    `${API_BASE}/users/premium-requests`,
+    {},
+    { withCredentials: true }
+  );
+  return res;
 };

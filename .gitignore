@@ -12,3 +12,5 @@ backend/ITTools.Core/obj
 backend/ITTools.DataAccess/bin
 backend/ITTools.DataAccess/obj
 backend/ITTools/appsettings.Development.json
+frontend/node_modules
+frontend/.env

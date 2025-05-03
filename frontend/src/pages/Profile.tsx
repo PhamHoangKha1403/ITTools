@@ -19,7 +19,7 @@ function Profile() {
   const requestUpgrade = async () => {
     try {
       const res = await requestUpgradeAPI();
-      if (res.status === 200) {
+      if (res.status === 201) {
         toast.success('Upgrade request has been sent to the admin!');
       } else {
         toast.error(res.data?.message || 'Failed to send upgrade request');

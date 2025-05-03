@@ -48,13 +48,11 @@ function Sidebar({ isVisible }: { isVisible: boolean }) {
   };
 
   return (
- 
     <div
       className={`fixed top-0 left-0 w-60 h-screen bg-neutral-800 text-white z-30 shadow-lg
-                 flex flex-col  /* Thêm flex và flex-col */
+                 flex flex-col
                  transition-transform duration-300 ease-in-out transform ${isVisible ? 'translate-x-0' : '-translate-x-full'}`}
     >
-
       <a className="flex flex-col z-10 flex-shrink-0">
          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 275" className="mt-[-65px]">
            <defs>
@@ -75,12 +73,11 @@ function Sidebar({ isVisible }: { isVisible: boolean }) {
            <div className="text-[16px]">Handy tools for developers</div>
          </div>
        </a>
-    
+
       <aside className="w-full flex-grow overflow-y-auto custom-scroll min-h-0 pt-4">
          {renderContent()}
       </aside>
     </div>
- 
   );
 }
 
@@ -88,14 +85,16 @@ function Sidebar({ isVisible }: { isVisible: boolean }) {
 function IconSidebar({ item }: { item: MenuItem }) {
   const [isOpen, setIsOpen] = useState(true);
   const navigate = useNavigate();
-  const userRole = localStorage.getItem("role");
 
   const handleToolClick = (toolId: number, isPremium?: boolean) => {
-      if (isPremium && userRole !== '1') {
-          toast.info("Upgrade to Premium to access this tool.");
-      } else {
-          navigate(`/tools/${toolId}`);
-      }
+    const userRole = localStorage.getItem("role");
+    // console.log("Sidebar Tool Click:", { toolId, isPremium, userRole });
+
+    if (isPremium && userRole !== '1' && userRole !== '2') {
+      toast.info("Upgrade to Premium to access this tool.");
+    } else {
+      navigate(`/tools/${toolId}`);
+    }
   };
 
   return (
@@ -107,21 +106,15 @@ function IconSidebar({ item }: { item: MenuItem }) {
         <span className="text-sm font-medium uppercase tracking-wider">{item.toolGroupName}</span>
         <svg
           className={`transform transition-transform duration-300 flex-shrink-0 ${isOpen ? "rotate-180" : "rotate-0"}`}
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
         >
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
       </button>
 
       {isOpen && (
-        <div className="flex flex-col w-full items-start pb-2 pl-4 pr-2">
+        <div className="flex flex-col w-full items-start pb-2 pl-4 pr-2 ">
           {item.tools.map((tool) => (
             <button
               key={tool.id}
@@ -130,7 +123,7 @@ function IconSidebar({ item }: { item: MenuItem }) {
             >
               <span>{tool.name}</span>
                {tool.isPremium && (
-                  <span className="text-yellow-400 text-xs absolute right-2 top-1/2 transform -translate-y-1/2">★</span>
+                 <span className="text-yellow-400 text-xs absolute right-2 top-1/2 transform -translate-y-1/2">★</span>
                )}
             </button>
           ))}

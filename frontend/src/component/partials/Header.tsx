@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom"; 
 import DropdownMenu from "../dropdown-menu-avatar";
 
 interface HeaderProps {
@@ -18,36 +18,53 @@ function Header({ toggleSidebar }: HeaderProps) {
   };
 
   return (
-    <header className="p-4 flex justify-between items-center text-center bg-neutral-800 rounded-lg">
-      <div className="flex space-x-4 items-center">
+    <header className="p-4 flex justify-between items-center bg-neutral-800 rounded-lg shadow-md">
+
+      <div className="flex items-center space-x-4">
+
+        <Link
+          to="/"
+          className="w-9 h-9 flex items-center justify-center rounded-full text-white hover:bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-neutral-800 focus:ring-white transition"
+          aria-label="Go to Home"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+          </svg>
+        </Link>
+
+
         <button
-          className="px-3 rounded-md hover:bg-neutral-400 focus:outline-none focus:ring-2 focus:ring-white transition transform focus:scale-105"
+          className="w-9 h-9 flex items-center justify-center rounded-full text-white hover:bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-neutral-800 focus:ring-white transition"
           aria-label="Toggle menu"
           onClick={toggleSidebar}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 612 612"
+            viewBox="0 0 20 20"
             fill="currentColor"
-            className="w-4 h-4 text-white"
+            className="w-5 h-5"
           >
-            <path d="M61.2,122.4h489.6c33.782,0,61.2-27.387,61.2-61.2S584.613,0,550.8,0H61.2C27.387,0,0,27.387,0,61.2     S27.387,122.4,61.2,122.4z M550.8,244.8H61.2C27.387,244.8,0,272.187,0,306c0,33.812,27.387,61.2,61.2,61.2h489.6     c33.782,0,61.2-27.388,61.2-61.2C612,272.187,584.613,244.8,550.8,244.8z M550.8,489.6H61.2C27.387,489.6,0,516.987,0,550.8     C0,584.613,27.387,612,61.2,612h489.6c33.782,0,61.2-27.387,61.2-61.2C612,516.987,584.613,489.6,550.8,489.6z" />
+            <path
+              fillRule="evenodd"
+              d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+              clipRule="evenodd"
+            />
           </svg>
         </button>
 
-        {/* 🔍 Search */}
-        <form onSubmit={handleSearch}>
-          <div className="xl:w-96 relative flex items-center bg-neutral-700 rounded-md overflow-hidden">
+
+        <form onSubmit={handleSearch} className="hidden md:block">
+          <div className="relative flex items-center bg-neutral-700 rounded-md w-64 md:w-72 lg:w-80 xl:w-96">
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full px-3 py-1 text-sm bg-transparent text-white placeholder-neutral-500 border-none focus:outline-none"
+              className="w-full pl-3 pr-10 py-1.5 text-sm bg-transparent text-white placeholder-neutral-400 border-none focus:outline-none focus:ring-0"
               placeholder="Search tools..."
             />
             <button
               type="submit"
-              className="px-3 py-2 text-white hover:text-emerald-400"
+              className="absolute inset-y-0 right-0 px-3 flex items-center text-neutral-400 hover:text-emerald-400 focus:outline-none"
               aria-label="Search"
             >
               <svg
@@ -67,7 +84,8 @@ function Header({ toggleSidebar }: HeaderProps) {
         </form>
       </div>
 
-      <div className="flex items-center space-x-4 text-sm text-neutral-500">
+
+      <div className="flex items-center">
         <DropdownMenu />
       </div>
     </header>

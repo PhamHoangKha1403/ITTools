@@ -87,7 +87,6 @@ function Home() {
                     tool={tool}
                     isFavorite={true}
                     onToggle={toggleFavorite}
-                    userRole={userRole}
                   />
                 ))}
             </div>
@@ -104,13 +103,12 @@ function Home() {
                    tool={tool}
                    isFavorite={favoriteToolIds.includes(tool.id)}
                    onToggle={toggleFavorite}
-                   userRole={userRole}
                  />
                ))}
              </div>
-          ) : (
+           ) : (
              <p className="text-gray-400">No tools found matching your criteria.</p>
-          )}
+           )}
         </section>
       </div>
     </div>
@@ -120,19 +118,18 @@ function Home() {
 function ToolCard({
   tool,
   onToggle,
-  isFavorite,
-  userRole
+  isFavorite
 }: {
   tool: ToolInfo;
   onToggle: (id: number) => void;
   isFavorite: boolean;
-  userRole: string | null;
 }) {
 
   const navigate = useNavigate();
+  const userRole = localStorage.getItem("role"); // Lấy role ở đây
 
   const handleCardClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (tool.isPremium && userRole !== '1') {
+    if (tool.isPremium && userRole !== '1' && userRole !== '2') {
       e.preventDefault();
       toast.info("Upgrade to Premium to access this tool.");
     }

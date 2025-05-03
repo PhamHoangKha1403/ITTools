@@ -49,24 +49,24 @@ function ToolPage() {
 
     console.log("toolId:", toolId);
     getToolMetadata(parseInt(toolId))
-
       .then((res) => {
         if (res.status === 200) {
           console.log("data:", res.data.data);
           setMetadata(res.data.data);
         } else {
-          toast.error(res.data.message);
-          setTimeout(() => {
-            toast.error(res.data.message || "Tool not found");
-          });
+          // Chỉ gọi toast một lần ở đây
+          toast.error(res.data.message || "Tool not found or failed to load");
+          // setTimeout(() => { // Bỏ setTimeout dư thừa này
+          //   toast.error(res.data.message || "Tool not found");
+          // });
         }
       })
       .catch((err) => {
         const message = err?.response?.data?.message || "Failed to load metadata";
         toast.error(message);
-        setTimeout(() => {
-          // window.location.href = "/";
-        });
+        // setTimeout(() => {
+        //  // window.location.href = "/"; // Giữ comment nếu chưa cần redirect
+        // });
       });
   }, [toolId]);
 
@@ -74,7 +74,6 @@ function ToolPage() {
     if (!toolId) return;
     try {
       const res = await submitTool(parseInt(toolId), formData);
-
       setResult(res.data);
     } catch (err: any) {
       const message = err?.response?.data?.message || "Failed to process tool";
@@ -111,7 +110,6 @@ function ToolPage() {
             onSubmit={handleSubmit}
             validator={validator}
             widgets={{ toggle: ToggleWidget }}
-
           />
         </Box>
 
@@ -120,7 +118,7 @@ function ToolPage() {
             <Typography variant="h6" color="primary" gutterBottom>
               💡 Result
             </Typography>
-       
+
             <OutputDisplay
               output={result}
               outputSchema={JSON.parse(metadata.outputSchema)}

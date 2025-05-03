@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { requestUpgradeAPI } from '../service/api';
-import { toast, ToastContainer } from 'react-toastify';
-import { AxiosError } from 'axios'; // Import AxiosError
+import { toast } from 'react-toastify'; 
+import { AxiosError } from 'axios';
+
+
 
 function Profile() {
   const [userName, setUserName] = useState<string | null>(null);
@@ -23,7 +25,6 @@ function Profile() {
         toast.error(res.data?.message || 'Failed to send upgrade request');
       }
     } catch (err) {
-      // Type err as AxiosError
       const error = err as AxiosError<{ message?: string }>;
       console.error('Error in requestUpgrade:', error);
       toast.error(
@@ -34,7 +35,7 @@ function Profile() {
 
   return (
     <div className="text-white p-8 max-w-xl mx-auto">
-      <ToastContainer />
+  
       <h2 className="text-2xl font-bold mb-6">👤 Profile</h2>
       <div className="bg-neutral-700 p-4 rounded-lg shadow mb-6 space-y-2">
         <p><strong>Username:</strong> {userName}</p>

@@ -32,7 +32,7 @@ function App() {
           </Route>
 
           <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<Admin />} />
+            <Route index element={<PremiumRequestManager />} />
             <Route path="users" element={<UserManager />} />
             <Route path="tools" element={<ToolManager />} />
             <Route path="/admin/tools/add" element={<AddTool />} />

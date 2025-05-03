@@ -42,48 +42,83 @@ function ToolPage() {
   const [metadata, setMetadata] = useState<any>(null);
   const [result, setResult] = useState<any>(null);
 
+
   useEffect(() => {
     console.log("toolId:", toolId);
     if (!toolId) return;
     setResult(null);
+    setMetadata(null);
 
-    console.log("toolId:", toolId);
+    console.log("Fetching metadata for toolId:", toolId);
     getToolMetadata(parseInt(toolId))
       .then((res) => {
         if (res.status === 200) {
-          console.log("data:", res.data.data);
-          setMetadata(res.data.data);
+          const toolData = res.data.data; 
+          console.log("data received:", toolData);
+
+        
+          if (toolData.isEnabled === false) { 
+            toast.error(`Tool "${toolData.name}" is currently disabled.`);
+           
+            setMetadata(toolData);
+           
+          } else {
+            
+            setMetadata(toolData);
+          
+          }
         } else {
-          // Chỉ gọi toast một lần ở đây
-          toast.error(res.data.message || "Tool not found or failed to load");
-          // setTimeout(() => { // Bỏ setTimeout dư thừa này
-          //   toast.error(res.data.message || "Tool not found");
-          // });
+       
+          const message = res.data?.message || "Tool not found or failed to load";
+          toast.error(message);
+          setMetadata(null); 
         }
       })
       .catch((err) => {
-        const message = err?.response?.data?.message || "Failed to load metadata";
+        console.error("Failed to load metadata:", err);
+        const message = err?.response?.data?.message || "Failed to load metadata due to a network or server error.";
         toast.error(message);
-        // setTimeout(() => {
-        //  // window.location.href = "/"; // Giữ comment nếu chưa cần redirect
-        // });
+        setMetadata(null); 
       });
   }, [toolId]);
 
   const handleSubmit = async ({ formData }: any) => {
-    if (!toolId) return;
+
+    if (!toolId || !metadata || !metadata.isEnabled) {
+       toast.warn("Cannot submit data for a disabled tool.");
+       return;
+    }
     try {
       const res = await submitTool(parseInt(toolId), formData);
       setResult(res.data);
     } catch (err: any) {
+      console.error("Failed to submit tool:", err); 
       const message = err?.response?.data?.message || "Failed to process tool";
       toast.error(message);
     }
   };
 
-
-  if (!metadata)
+ 
+  if (!metadata) {
     return <div className="text-white p-8">🔄 Loading tool...</div>;
+  }
+
+  if (metadata.isEnabled === false) { 
+    return (
+      <ThemeProvider theme={darkTheme}>
+        <CssBaseline />
+        <Container maxWidth="md" sx={{ pt: 6, pb: 8 }}>
+          <Typography variant="h4" color="error" gutterBottom>
+            Tool Disabled
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            The tool "{metadata.name || 'this tool'}" is currently disabled and cannot be accessed.
+          </Typography>
+        </Container>
+      </ThemeProvider>
+    );
+  }
+
 
   return (
     <ThemeProvider theme={darkTheme}>
@@ -104,13 +139,20 @@ function ToolPage() {
             mb: 4,
           }}
         >
-          <Form
-            schema={JSON.parse(metadata.inputSchema).schema}
-            uiSchema={JSON.parse(metadata.inputSchema).uiSchema}
-            onSubmit={handleSubmit}
-            validator={validator}
-            widgets={{ toggle: ToggleWidget }}
-          />
+        
+          {metadata.inputSchema && (
+             <Form
+               schema={JSON.parse(metadata.inputSchema).schema || {}}
+               uiSchema={JSON.parse(metadata.inputSchema).uiSchema || {}}
+               onSubmit={handleSubmit}
+               validator={validator}
+               widgets={{ toggle: ToggleWidget }}
+              
+             />
+          )}
+          {!metadata.inputSchema && (
+              <Typography color="error">Input schema is missing for this tool.</Typography>
+          )}
         </Box>
 
         {result && (
@@ -118,11 +160,18 @@ function ToolPage() {
             <Typography variant="h6" color="primary" gutterBottom>
               💡 Result
             </Typography>
-
-            <OutputDisplay
-              output={result}
-              outputSchema={JSON.parse(metadata.outputSchema)}
-            />
+          
+            {metadata.outputSchema && (
+                 <OutputDisplay
+                   output={result}
+                   outputSchema={JSON.parse(metadata.outputSchema)}
+                 />
+            )}
+             {!metadata.outputSchema && (
+                 <Typography color="text.secondary">Output schema is missing, displaying raw result:</Typography>
+             )}
+            
+            
           </Box>
         )}
       </Container>

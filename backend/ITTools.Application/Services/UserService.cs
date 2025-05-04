@@ -101,15 +101,16 @@ namespace ITTools.Application.Services
                 var requests = await _unitOfWork.UpgradeRequests.GetAllAsync();
                 _logger?.LogInformation("Successfully retrieved all premium upgrade requests!");
 
-                // Map to DTOs
-                var requestDTOs = await Task.WhenAll(requests.Select(async request =>
+                var requestDTOs = new List<UpgradeRequestDTO>();
+                foreach (var request in requests)
                 {
                     var requestedUser = await _unitOfWork.Users.GetByIdAsync(request.UserId);
                     var processedUser = request.ProcessedByUserId.HasValue
                         ? await _unitOfWork.Users.GetByIdAsync(request.ProcessedByUserId.Value)
                         : null;
-                    return RequestToDTO(request, requestedUser, processedUser);
-                }));
+
+                    requestDTOs.Add(RequestToDTO(request, requestedUser, processedUser));
+                }
 
                 return requestDTOs;
             }

@@ -143,6 +143,32 @@ namespace ITTools.Application.Services
                     _logger?.LogWarning("Premium upgrade request with ID {RequestId} not found.", requestId);
                     throw new NotFoundException($"Premium upgrade request with ID {requestId} not found.");
                 }
+                if (status == PremiumUpgradeRequestStatus.Approved)
+                {
+                    _logger?.LogInformation("Request {RequestId} approved. Attempting to upgrade user ID {UserId} to Premium.", requestId, request.UserId);
+
+
+                    var userToUpgrade = await _unitOfWork.Users.GetByIdAsync(request.UserId);
+
+                    if (userToUpgrade == null)
+                    {
+
+                        _logger?.LogError("User with ID {UserId} associated with request {RequestId} not found. Cannot upgrade role.", request.UserId, requestId);
+
+                    }
+
+                    else if (userToUpgrade.Role == UserRole.User)
+                    {
+
+                        userToUpgrade.Role = UserRole.Premium;
+
+                        _logger?.LogInformation("Successfully set user ID {UserId} role to Premium. Changes will be saved on commit.", request.UserId);
+                    }
+                    else
+                    {
+                        _logger?.LogWarning("User ID {UserId} already has role {CurrentRole} or is Admin. No role change performed.", userToUpgrade.Id, userToUpgrade.Role);
+                    }
+                }
 
                 request.Status = status;
                 request.AdminNotes = notes;

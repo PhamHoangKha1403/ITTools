@@ -242,18 +242,41 @@ export const approvePremiumRequest = async (
 };
 
 export const rejectPremiumRequest = async (
-  requestId: number
-): Promise<AxiosResponse> => {
-  const url = `${API_BASE}/users/premium-requests/${requestId}`;
-  const config = {
-    headers: {
-      'accept': '*/*',
-    },
-    withCredentials: true
+    requestId: number,
+    notes: string = "" 
+  ): Promise<AxiosResponse> => {
+    const url = `${API_BASE}/users/premium-requests/${requestId}`;
+    const requestBody = {
+      status: 2,
+      notes: notes
+    };
+    const config = {
+      headers: {
+     
+        'Content-Type': 'application/json-patch+json',
+        'accept': '*/*',
+      },
+      withCredentials: true
+    };
+ 
+    const res = await axios.patch(url, requestBody, config);
+    return res;
   };
-  const res = await axios.delete(url, config);
-  return res;
-};
+  
+ 
+  export const deletePremiumRequest = async (
+    requestId: number
+  ): Promise<AxiosResponse> => {
+    const url = `${API_BASE}/users/premium-requests/${requestId}`;
+    const config = {
+      headers: {
+        'accept': '*/*',
+      },
+      withCredentials: true
+    };
+    const res = await axios.delete(url, config);
+    return res;
+  };
 
 export const uploadToolDLL = async (
   files: File[]

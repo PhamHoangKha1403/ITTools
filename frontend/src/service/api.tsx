@@ -35,14 +35,21 @@ export interface MenuItem {
 
 export interface PremiumRequest {
   id: number;
-  userId: number;
+  requestedUser: UserDTO;
   requestTimestamp: string;
   status: number;
-  processedByUserId?: number | null;
+  processedByUser: UserDTO | null;
   processedTimestamp?: string | null;
   adminNotes?: string | null;
   username?: string;
 }
+
+export interface UserDTO {
+  id: number;
+  username: string;
+  role: number;
+}
+
 export interface AuthResponse {
   user: {
     username: string;

@@ -93,14 +93,25 @@ namespace ITTools.Application.Services
             }
         }
 
-        public async Task<IEnumerable<PremiumUpgradeRequest>> GetAllPremiumUpgradeRequestsAsync()
+        public async Task<IEnumerable<UpgradeRequestDTO>> GetAllPremiumUpgradeRequestsAsync()
         {
             _logger?.LogInformation("Retrieving all premium upgrade requests...");
             try
             {
                 var requests = await _unitOfWork.UpgradeRequests.GetAllAsync();
                 _logger?.LogInformation("Successfully retrieved all premium upgrade requests!");
-                return requests;
+
+                // Map to DTOs
+                var requestDTOs = await Task.WhenAll(requests.Select(async request =>
+                {
+                    var requestedUser = await _unitOfWork.Users.GetByIdAsync(request.UserId);
+                    var processedUser = request.ProcessedByUserId.HasValue
+                        ? await _unitOfWork.Users.GetByIdAsync(request.ProcessedByUserId.Value)
+                        : null;
+                    return RequestToDTO(request, requestedUser, processedUser);
+                }));
+
+                return requestDTOs;
             }
             catch (Exception ex)
             {
@@ -143,25 +154,20 @@ namespace ITTools.Application.Services
                     _logger?.LogWarning("Premium upgrade request with ID {RequestId} not found.", requestId);
                     throw new NotFoundException($"Premium upgrade request with ID {requestId} not found.");
                 }
+
                 if (status == PremiumUpgradeRequestStatus.Approved)
                 {
                     _logger?.LogInformation("Request {RequestId} approved. Attempting to upgrade user ID {UserId} to Premium.", requestId, request.UserId);
 
-
                     var userToUpgrade = await _unitOfWork.Users.GetByIdAsync(request.UserId);
-
                     if (userToUpgrade == null)
                     {
-
                         _logger?.LogError("User with ID {UserId} associated with request {RequestId} not found. Cannot upgrade role.", request.UserId, requestId);
-
                     }
-
                     else if (userToUpgrade.Role == UserRole.User)
                     {
-
                         userToUpgrade.Role = UserRole.Premium;
-
+                        _unitOfWork.Users.Update(userToUpgrade);
                         _logger?.LogInformation("Successfully set user ID {UserId} role to Premium. Changes will be saved on commit.", request.UserId);
                     }
                     else
@@ -184,6 +190,30 @@ namespace ITTools.Application.Services
                 _logger?.LogError(ex, "Error while updating premium upgrade request with ID: {RequestId}", requestId);
                 throw;
             }
+        }
+
+        private UpgradeRequestDTO RequestToDTO(PremiumUpgradeRequest request, User requestedUser, User processedUser)
+        {
+            return new UpgradeRequestDTO
+            {
+                Id = request.Id,
+                RequestTimestamp = request.RequestTimestamp,
+                Status = request.Status,
+                ProcessedTimestamp = request.ProcessedTimestamp,
+                AdminNotes = request.AdminNotes,
+                RequestedUser = new UserDTO
+                {
+                    Id = requestedUser.Id,
+                    Username = requestedUser.Username,
+                    Role = requestedUser.Role
+                },
+                ProcessedByUser = processedUser != null ? new UserDTO
+                {
+                    Id = processedUser.Id,
+                    Username = processedUser.Username,
+                    Role = processedUser.Role
+                } : null
+            };
         }
     }
 }

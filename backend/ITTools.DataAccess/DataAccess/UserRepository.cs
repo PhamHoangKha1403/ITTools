@@ -32,5 +32,10 @@ namespace ITTools.Infrastructure.DataAccess
         {
             return await _context.Users.ToListAsync();
         }
+
+        public void Update(User user)
+        {
+            _context.Entry(user).State = EntityState.Modified;
+        }
     }
 }

@@ -106,17 +106,6 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowLocalhost5173", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-            .AllowCredentials();
-    });
-});
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowLocalhost5173", policy =>
-    {
         policy.WithOrigins("https://localhost:5173")
               .AllowAnyHeader()
               .AllowAnyMethod()

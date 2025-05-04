@@ -107,11 +107,10 @@ function PremiumRequestManager() {
                 <table className="w-full min-w-[900px] text-left table-fixed border-collapse">
                     <thead className="sticky top-0 bg-neutral-700 text-gray-300 uppercase text-sm z-10">
                         <tr>
-                      
-                            <th className="px-3 py-3 w-[5%] border-b border-neutral-600">Req ID</th> {/* Đổi tên cột cho rõ */}
+                            <th className="px-3 py-3 w-[5%] border-b border-neutral-600">Req ID</th>
                             <th className="px-3 py-3 w-[10%] border-b border-neutral-600">User ID</th>
-                            <th className="px-3 py-3 w-[15%] border-b border-neutral-600">Username</th> {/* Thêm cột username nếu có */}
-                            <th className="px-3 py-3 w-[15%] border-b border-neutral-600">Requested</th>
+                            <th className="px-3 py-3 w-[15%] border-b border-neutral-600">Username</th>
+                            <th className="px-3 py-3 w-[15%] border-b border-neutral-600">Requested Date</th>
                             <th className="px-3 py-3 w-[10%] border-b border-neutral-600">Status</th>
                             <th className="px-3 py-3 w-[15%] border-b border-neutral-600">Notes</th>
                             <th className="px-3 py-3 w-[15%] text-center border-b border-neutral-600">Processed</th>
@@ -126,8 +125,8 @@ function PremiumRequestManager() {
                         ) : requests.length > 0 ? requests.map((req) => (
                             <tr key={req.id} className={`hover:bg-neutral-700/50 transition duration-150 ease-in-out`}>
                                 <td className="px-3 py-2 text-sm">{req.id}</td>
-                                <td className="px-3 py-2 text-sm">{req.userId}</td>
-                                <td className="px-3 py-2 text-sm">{req.username || 'N/A'}</td> {/* Hiển thị username */}
+                                <td className="px-3 py-2 text-sm">{req.requestedUser.id}</td>
+                                <td className="px-3 py-2 text-sm">{req.requestedUser.username || 'N/A'}</td> {/* Hiển thị username */}
                                 <td className="px-3 py-2 text-sm">{formatDate(req.requestTimestamp)}</td>
                                 <td className="px-3 py-2 text-sm">
                                     <span className={`font-semibold px-1.5 py-0.5 rounded text-xs ${req.status === 0 ? 'bg-yellow-600 text-white' : req.status === 1 ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}> {/* Sửa màu cho Pending/Rejected */}
@@ -136,7 +135,7 @@ function PremiumRequestManager() {
                                 </td>
                                 <td className="px-3 py-2 text-sm truncate" title={req.adminNotes || ''}>{req.adminNotes || '—'}</td>
                                 <td className="px-3 py-2 text-sm text-center">
-                                    {req.processedByUserId ? `By: ${req.processedByUserId} at ${formatDate(req.processedTimestamp)}` : '—'}
+                                    {req.processedByUser?.id ? `By: ${req.processedByUser.username} at ${formatDate(req.processedTimestamp)}` : '—'}
                                 </td>
                                 <td className="px-3 py-2 text-center space-x-2">
                          
@@ -144,16 +143,16 @@ function PremiumRequestManager() {
                                         <>
                                             <button
                                                 className="text-green-500 hover:text-green-400 hover:underline transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                                                onClick={() => handleApprove(req.id, req.userId)}
-                                                title={`Approve request ${req.id} for user ${req.userId}`}
+                                                onClick={() => handleApprove(req.id, req.requestedUser.id)}
+                                                title={`Approve request ${req.id} for user ${req.requestedUser.username}`}
                                                 
                                             >
                                                 Approve
                                             </button>
                                             <button
                                                 className="text-red-500 hover:text-red-400 hover:underline transition text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                                                onClick={() => handleReject(req.id, req.userId)}
-                                                title={`Reject/Delete request ${req.id} for user ${req.userId}`}
+                                                onClick={() => handleReject(req.id, req.requestedUser.id)}
+                                                title={`Reject/Delete request ${req.id} for user ${req.requestedUser.username}`}
                                              
                                             >
                                                 Reject

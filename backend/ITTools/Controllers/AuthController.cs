@@ -1,7 +1,9 @@
-﻿using ITTools.Application.DTO;
+﻿using System.Security.Claims;
+using ITTools.Application.DTO;
 using ITTools.Application.Exceptions;
 using ITTools.Application.Services;
 using ITTools.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ITTools.API.Controllers
@@ -101,6 +103,56 @@ namespace ITTools.API.Controllers
             catch (AlreadyExistException ex)
             {
                 return BadRequest(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "Internal server error", Details = ex.Message });
+            }
+        }
+
+        // Get new JWT token
+        [HttpGet("token")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetToken()
+        {
+            var userId = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { Message = "User ID not found in claims." });
+            }
+
+            try
+            {
+                var (token, user) = await _authService.GenerateNewToken(int.Parse(userId));
+                if (token == null || user == null)
+                {
+                    return Unauthorized(new { Message = "Failed to generate a new token." });
+                }
+
+                // Delete the old JWT cookie
+                Response.Cookies.Delete("jwt");
+
+                // Store new JWT in HttpOnly cookie
+                Response.Cookies.Append("jwt", token, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true, // Requires HTTPS
+                    SameSite = SameSiteMode.Lax,
+                    Expires = DateTimeOffset.UtcNow.AddHours(3) // Match JWT expiration
+                });
+
+                return Ok(new
+                {
+                    Message = "Generate new token successfully!",
+                    User = UserToDTO(user)
+                });
+            }
+            catch (FormatException)
+            {
+                return BadRequest(new { Message = "Invalid user ID format." });
             }
             catch (Exception ex)
             {

@@ -144,7 +144,7 @@ namespace ITTools.Application.Services
             }
         }
 
-        public async Task UpdateUpgradeRequest(int requestId, int userId, PremiumUpgradeRequestStatus status, string notes)
+        public async Task UpdateUpgradeRequest(int requestId, int userId, PremiumUpgradeRequestStatus status, string? notes)
         {
             _logger?.LogInformation("Updating premium upgrade request with ID: {RequestId}", requestId);
             try
@@ -154,6 +154,13 @@ namespace ITTools.Application.Services
                 {
                     _logger?.LogWarning("Premium upgrade request with ID {RequestId} not found.", requestId);
                     throw new NotFoundException($"Premium upgrade request with ID {requestId} not found.");
+                }
+
+                // If the request is already processed, cannot change its status
+                if (request.Status != PremiumUpgradeRequestStatus.Pending)
+                {
+                    _logger?.LogWarning("Premium upgrade request with ID {RequestId} is already processed. Cannot update status.", requestId);
+                    throw new InvalidOperationException($"Premium upgrade request with ID {requestId} is already processed.");
                 }
 
                 if (status == PremiumUpgradeRequestStatus.Approved)

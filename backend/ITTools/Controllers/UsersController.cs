@@ -130,6 +130,7 @@ namespace ITTools.API.Controllers
         [HttpPatch("premium-requests/{requestId}")]
         [Authorize(Policy = "AdminOnly")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -149,6 +150,11 @@ namespace ITTools.API.Controllers
                 _logger.LogInformation("Successfully updated premium upgrade request with ID: {RequestId}", requestId);
                 return NoContent();
             }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "User with ID {UserId} has a bad request.", userId);
+                return BadRequest(new { message = ex.Message });
+            }
             catch (NotFoundException ex)
             {
                 _logger.LogWarning(ex, "Premium upgrade request with ID {RequestId} not found.", requestId);
@@ -165,6 +171,6 @@ namespace ITTools.API.Controllers
     public class PremiumUpgradeRequestModel
     {
         public PremiumUpgradeRequestStatus Status { get; set; }
-        public string Notes { get; set; }
+        public string? Notes { get; set; }
     }
 }

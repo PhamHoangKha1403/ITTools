@@ -33,6 +33,16 @@ namespace ITTools.Application.Services
                 throw new NotFoundException("Username or password is incorrect.");
             }
 
+            string token = GenerateJwtToken(user);
+
+            // Log the successful login
+            _logger.LogInformation("User {Username} logged in successfully.", username);
+
+            return (token, user);
+        }
+
+        private string GenerateJwtToken(User user)
+        {
             // Generate JWT token
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["jwt:secret"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -53,11 +63,7 @@ namespace ITTools.Application.Services
 
             var tokenHandler = new JsonWebTokenHandler();
             string token = tokenHandler.CreateToken(tokenDescriptor);
-
-            // Log the successful login
-            _logger.LogInformation("User {Username} logged in successfully.", username);
-
-            return (token, user);
+            return token;
         }
 
         public async Task Register(string username, string password)
@@ -89,6 +95,21 @@ namespace ITTools.Application.Services
                 _logger.LogError(ex, "Error registering user: {Username}", username);
                 throw;
             }
+        }
+
+        public async Task<(string?, User?)> GenerateNewToken(int userId)
+        {
+            var user = await _unitOfWork.Users.GetByIdAsync(userId);
+            if (user == null)
+            {
+                _logger.LogWarning("User with ID {UserId} not found.", userId);
+                throw new NotFoundException($"User with ID {userId} not found.");
+            }
+
+            string token = GenerateJwtToken(user);
+
+            _logger.LogInformation("New token generated for user: {Username}", user.Username);
+            return (token, user);
         }
     }
 }

@@ -1,4 +1,7 @@
-import { Typography, Box } from "@mui/material";
+import { Typography, Box, Theme } from "@mui/material";
+import { marked } from 'marked';
+import { ElementType } from 'react'; 
+
 
 const getTitleFromProperties = (key: string, properties: any): string => {
   return properties?.[key]?.title || key;
@@ -9,16 +12,35 @@ const renderGenericValue = (value: any): string => {
     return value;
   }
   if (value === null || typeof value === 'undefined') {
-      return '';
+     return '';
   }
   try {
-    return JSON.stringify(value, null, 2);
+  
+    if (typeof value === 'object') {
+       return JSON.stringify(value, null, 2);
+    }
+ 
+    return String(value);
   } catch (error) {
-    console.error("Error stringifying value:", error);
+    console.error("Error stringifying/converting value:", error);
     return "[Lỗi hiển thị dữ liệu]";
   }
 };
 
+const parseMarkdownToHtml = (mdString: string): string => {
+    try {
+        marked.setOptions({
+            gfm: true,
+            breaks: false,
+            pedantic: false,
+           
+        });
+        return marked.parse(mdString) as string;
+    } catch (error) {
+        console.error("Error parsing Markdown:", error);
+        return `<p style="color: red;">Lỗi hiển thị bảng Markdown</p>`;
+    }
+};
 
 const OutputDisplay = ({
   output,
@@ -61,10 +83,11 @@ const OutputDisplay = ({
                                 value.startsWith('Error:');
 
           const isSvgImageBase64 = key === 'svgBase64' &&
-                                 typeof value === 'string' &&
-                                 value.startsWith('data:image/svg+xml;base64,');
+                                  typeof value === 'string' &&
+                                  value.startsWith('data:image/svg+xml;base64,');
 
           const isSvgString = key === 'svgString';
+          const isMarkdownTable = key === 'markdownTable' && typeof value === 'string';
 
           const fieldTitle = getTitleFromProperties(key, properties);
 
@@ -74,67 +97,100 @@ const OutputDisplay = ({
                 {fieldTitle}
               </Typography>
 
-              {isQrCodeImage ? (
-                 <Box
-                   sx={{
-                     mt: 0.5,
-                     p: 0,
-                     backgroundColor: 'white',
-                     display: 'inline-block',
-                     borderRadius: 1,
-                   }}
-                 >
-                   <img
-                     src={value}
-                     alt={fieldTitle}
-                     style={{
-                       display: 'block',
-                       maxWidth: '250px',
-                       height: 'auto',
-                       userSelect: 'none',
+              {isMarkdownTable ? (
+                  <Box
+                      sx={{
+                          border: '1px solid #555',
+                          borderRadius: 1,
+                          overflowX: 'auto',
+                          mt: 0.5,
+                          p: 0.5,
+                          bgcolor: 'background.default',
+                          '& table': {
+                              borderCollapse: 'collapse',
+                              width: '100%',
+                              fontSize: '0.875rem',
+                              color: '#fff',
+                              'th, td': {
+                                  border: '1px solid #777',
+                                  padding: '6px 10px',
+                                  textAlign: 'left',
+                                  verticalAlign: 'top',
+                              },
+                              'th': {
+                                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                  fontWeight: 'bold',
+                              },
+                              'td': {
+                                 fontFamily: 'monospace',
+                                 whiteSpace: 'pre-wrap',
+                              }
+                          }
+                      }}
+                      dangerouslySetInnerHTML={{ __html: parseMarkdownToHtml(value) }}
+                  />
+              ) : isQrCodeImage ? (
+                   <Box
+                     sx={{
+                       mt: 0.5,
+                       p: 0,
+                       backgroundColor: 'white',
+                       display: 'inline-block',
+                       borderRadius: 1,
                      }}
-                   />
-                 </Box>
+                   >
+                     <img
+                       src={value as string}
+                       alt={fieldTitle}
+                       style={{
+                         display: 'block',
+                         maxWidth: '250px',
+                         height: 'auto',
+                         userSelect: 'none',
+                       }}
+                     />
+                   </Box>
               ) : isSvgImageBase64 ? (
-                 <Box sx={{
-                     mt: 0.5,
-                     border: '1px dashed #aaa',
-                     padding: '4px',
-                     display: 'inline-block',
-                     maxWidth: '100%'
-                    }}
-                  >
-                   <img
-                     src={value}
-                     alt={fieldTitle}
-                     style={{
-                       display: 'block',
-                       maxWidth: '100%',
-                       maxHeight: '300px',
-                       height: 'auto',
-                       userSelect: 'none',
-                     }}
-                   />
-                 </Box>
+                   <Box sx={{
+                       mt: 0.5,
+                       border: '1px dashed #aaa',
+                       padding: '4px',
+                       display: 'inline-block',
+                       maxWidth: '100%'
+                      }}
+                   >
+                     <img
+                       src={value as string}
+                       alt={fieldTitle}
+                       style={{
+                         display: 'block',
+                         maxWidth: '100%',
+                         maxHeight: '300px',
+                         height: 'auto',
+                         userSelect: 'none',
+                       }}
+                     />
+                   </Box>
               ) : (
-                <Box
-                  sx={{
-                    p: isSvgString ? 1 : 1.5,
-                    bgcolor: isQrCodeError ? 'error.dark' : 'background.default',
-                    color: isQrCodeError ? 'error.contrastText' : '#fff',
-                    border: "1px solid #444",
-                    borderRadius: 1,
-                    fontFamily: "monospace",
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                    overflowWrap: "anywhere",
-                    mt: 0.5,
-                    maxHeight: isSvgString ? '200px' : 'none',
-                    overflowY: isSvgString ? 'auto' : 'visible',
-                  }}
-                >
-                  {renderGenericValue(value)}
-                </Box>
+                   <Box
+                     sx={{
+                       p: isSvgString ? 1 : 1.5,
+                       bgcolor: isQrCodeError ? 'error.dark' : 'background.default',
+                       color: isQrCodeError ? 'error.contrastText' : '#fff',
+                       border: "1px solid #444",
+                       borderRadius: 1,
+                       fontFamily: "monospace",
+                       whiteSpace: "pre-wrap",
+                       wordBreak: "break-word",
+                       overflowWrap: "anywhere",
+                       mt: 0.5,
+                       maxHeight: isSvgString ? '200px' : 'none',
+                       overflowY: isSvgString ? 'auto' : 'visible',
+                     }}
+                   >
+                   
+                      {renderGenericValue(value)}
+                   </Box>
               )}
             </Box>
           );
@@ -142,6 +198,7 @@ const OutputDisplay = ({
       </Box>
     );
   }
+
 
   return (
     <Box

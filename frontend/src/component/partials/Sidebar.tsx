@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { getMenuItems, MenuItem } from '../../service/api';
+import { getMenuItems, MenuItem, refreshAuthToken } from '../../service/api';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import type { RefreshTokenSuccessResponse } from '../../service/api';
 
 function Sidebar({ isVisible }: { isVisible: boolean }) {
+
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,6 +37,7 @@ function Sidebar({ isVisible }: { isVisible: boolean }) {
     fetchMenu();
   }, []);
 
+
   const renderContent = () => {
     if (loading) {
       return <div className="p-4 text-gray-400">Loading menu...</div>;
@@ -50,10 +53,10 @@ function Sidebar({ isVisible }: { isVisible: boolean }) {
   return (
     <div
       className={`fixed top-0 left-0 w-60 h-screen bg-neutral-800 text-white z-30 shadow-lg
-                 flex flex-col
-                 transition-transform duration-300 ease-in-out transform ${isVisible ? 'translate-x-0' : '-translate-x-full'}`}
+               flex flex-col
+               transition-transform duration-300 ease-in-out transform ${isVisible ? 'translate-x-0' : '-translate-x-full'}`}
     >
-      <a className="flex flex-col z-10 flex-shrink-0">
+      <a href="/" className="flex flex-col z-10 flex-shrink-0">
          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 275" className="mt-[-65px]">
            <defs>
              <linearGradient id="sidebar-logo-original-gradient" x1="13.74" x2="303.96" y1="183.7" y2="45.59" gradientUnits="userSpaceOnUse">
@@ -72,7 +75,7 @@ function Sidebar({ isVisible }: { isVisible: boolean }) {
            <div className="w-12 h-0.5 mx-auto my-0 mb-1 bg-white opacity-50" />
            <div className="text-[16px]">Handy tools for developers</div>
          </div>
-       </a>
+        </a>
 
       <aside className="w-full flex-grow overflow-y-auto custom-scroll min-h-0 pt-4">
          {renderContent()}
@@ -86,14 +89,44 @@ function IconSidebar({ item }: { item: MenuItem }) {
   const [isOpen, setIsOpen] = useState(true);
   const navigate = useNavigate();
 
-  const handleToolClick = (toolId: number, isPremium?: boolean) => {
-    const userRole = localStorage.getItem("role");
-    // console.log("Sidebar Tool Click:", { toolId, isPremium, userRole });
 
-    if (isPremium && userRole !== '1' && userRole !== '2') {
-      toast.info("Upgrade to Premium to access this tool.");
+  const handleToolClick = async (toolId: number, isPremium?: boolean) => {
+    const currentRole = localStorage.getItem("role");
+    const userLoggedIn = Boolean(localStorage.getItem("userName"));
+    const isStandardUser = currentRole !== '1' && currentRole !== '2';
+
+    if (isPremium && isStandardUser) {
+       if (userLoggedIn) {
+           console.log("Sidebar: Tool is premium and logged-in user is standard. Attempting token refresh via GET...");
+           try {
+             const response = await refreshAuthToken(); 
+             const responseData = response.data as RefreshTokenSuccessResponse;
+
+            
+             if (responseData.user && (responseData.user.role === 1 || responseData.user.role === 2)) {
+                console.log("Sidebar: Token refresh successful, user role updated to:", responseData.user.role);
+             
+                localStorage.setItem('role', responseData.user.role.toString());
+          
+                navigate(`/tools/${toolId}`);
+             } else {
+                
+                console.log("Sidebar: Token refresh response received, but user role not premium/admin.");
+                toast.info("Upgrade to Premium to access this tool.");
+             }
+           } catch (error: any) {
+              
+             console.error("Sidebar: Token refresh failed:", error.response?.data || error.message);
+             toast.error("Failed to verify access. Please try again or upgrade.");
+           }
+       } else {
+         
+            console.log("Sidebar: Tool is premium and user is not logged in.");
+            toast.info("Please log in and upgrade to Premium to access this tool.");
+       }
     } else {
-      navigate(`/tools/${toolId}`);
+      
+        navigate(`/tools/${toolId}`);
     }
   };
 

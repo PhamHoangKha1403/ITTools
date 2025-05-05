@@ -21,6 +21,11 @@ export interface User {
   username: string;
   role: number;
 }
+export interface RefreshTokenSuccessResponse {
+  message: string;
+  user: User; 
+}
+
 export interface MenuItem {
   toolGroupId: number;
   toolGroupName: string;
@@ -306,4 +311,9 @@ export const requestUpgradeAPI = async () => {
     { withCredentials: true }
   );
   return res;
+};
+export const refreshAuthToken = async (): Promise<AxiosResponse<RefreshTokenSuccessResponse>> => {
+  return axios.get(`${API_BASE}/auth/token`, {
+    withCredentials: true
+  });
 };

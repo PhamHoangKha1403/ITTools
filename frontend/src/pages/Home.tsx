@@ -1,21 +1,27 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
-import { getTools, getFavoriteTools, toggleFavoriteAPI, ToolInfo, removeFavoriteAPI } from "../service/api";
+import { getTools, getFavoriteTools, toggleFavoriteAPI, ToolInfo, removeFavoriteAPI, refreshAuthToken } from "../service/api";
+import type { RefreshTokenSuccessResponse } from "../service/api";
 
 function Home() {
+ 
   const [tools, setTools] = useState<ToolInfo[]>([]);
   const [favoriteToolIds, setFavoriteToolIds] = useState<number[]>([]);
   const location = useLocation();
   const navigate = useNavigate();
 
   const userLoggedIn = Boolean(localStorage.getItem("userName"));
-  const userRole = localStorage.getItem("role");
+ 
+  const [userRole, setUserRole] = useState<string | null>(localStorage.getItem("role"));
 
   const query = new URLSearchParams(location.search).get("search");
 
   useEffect(() => {
+ 
+    setUserRole(localStorage.getItem("role"));
+
     getTools(query || "")
       .then((res) => {
         if (res.status === 200 && Array.isArray(res.data?.data)) {
@@ -45,7 +51,8 @@ function Home() {
     } else {
         setFavoriteToolIds([]);
     }
-  }, [query, userLoggedIn]);
+  }, [query, userLoggedIn, location]);
+
 
   const toggleFavorite = async (toolId: number) => {
     if (!userLoggedIn) {
@@ -87,6 +94,9 @@ function Home() {
                     tool={tool}
                     isFavorite={true}
                     onToggle={toggleFavorite}
+                    userLoggedIn={userLoggedIn}
+                    userRole={userRole} 
+                    onRoleUpdate={setUserRole} 
                   />
                 ))}
             </div>
@@ -103,6 +113,9 @@ function Home() {
                    tool={tool}
                    isFavorite={favoriteToolIds.includes(tool.id)}
                    onToggle={toggleFavorite}
+                   userLoggedIn={userLoggedIn}
+                   userRole={userRole} 
+                   onRoleUpdate={setUserRole}
                  />
                ))}
              </div>
@@ -118,27 +131,68 @@ function Home() {
 function ToolCard({
   tool,
   onToggle,
-  isFavorite
+  isFavorite,
+  userLoggedIn,
+  userRole, 
+  onRoleUpdate 
 }: {
   tool: ToolInfo;
   onToggle: (id: number) => void;
   isFavorite: boolean;
+  userLoggedIn: boolean;
+  userRole: string | null; 
+  onRoleUpdate: (newRole: string | null) => void;
 }) {
 
   const navigate = useNavigate();
-  const userRole = localStorage.getItem("role"); // Lấy role ở đây
 
-  const handleCardClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (tool.isPremium && userRole !== '1' && userRole !== '2') {
-      e.preventDefault();
-      toast.info("Upgrade to Premium to access this tool.");
+  const isStandardUser = userRole !== '1' && userRole !== '2';
+
+  const handleCardClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+  
+    const currentIsStandardUser = userRole !== '1' && userRole !== '2';
+
+    if (tool.isPremium && currentIsStandardUser) {
+      e.preventDefault(); 
+      if (userLoggedIn) {
+          console.log("Tool is premium and logged-in user is standard. Attempting token refresh via GET...");
+          try {
+            const response = await refreshAuthToken(); 
+            const responseData = response.data as RefreshTokenSuccessResponse;
+
+        
+            if (responseData.user && (responseData.user.role === 1 || responseData.user.role === 2)) {
+                console.log("Token refresh successful, user role updated to:", responseData.user.role);
+                const newRole = responseData.user.role.toString();
+             
+                localStorage.setItem('role', newRole);
+                onRoleUpdate(newRole);
+      
+                navigate(`/tools/${tool.id}`);
+
+            } else {
+              
+                console.log("Token refresh response received, but user role not premium/admin or data format incorrect.");
+                toast.info("Upgrade to Premium to access this tool.");
+            }
+          } catch (error: any) {
+            
+            console.error("Token refresh failed:", error.response?.data || error.message);
+            toast.error("Failed to verify access. Please try again or upgrade."); 
+          }
+      } else {
+    
+          console.log("Tool is premium and user is not logged in.");
+          toast.info("Please log in and upgrade to Premium to access this tool."); 
+      }
     }
+  
   };
 
   return (
     <Link
       to={`/tools/${tool.id}`}
-      onClick={handleCardClick}
+      onClick={handleCardClick} 
       className="block w-full min-h-[160px] bg-neutral-700 rounded-lg p-4 shadow hover:shadow-lg transition duration-300 ease-in-out transform hover:-translate-y-1 relative"
     >
       <div className="flex justify-between items-start mb-2">
